@@ -206,8 +206,18 @@ function QuizManagement({ quizzes, onQuizUpdate, showModal, setShowModal }) {
               />
             </Form.Group>
 
+            <div className="d-flex gap-2 mb-4">
+              <Button variant="secondary" onClick={() => setShowModal(false)}>
+                {t('quiz.creation.cancel')}
+              </Button>
+              <div className="flex-grow-1"></div>
+              <Button variant="primary" type="submit">
+                {t('quiz.creation.save')}
+              </Button>
+            </div>
+
             <div className="d-flex justify-content-between align-items-center mb-3">
-              <h5>{t('quiz.creation.questions')}</h5>
+              <h5 className="mb-0">{t('quiz.creation.questions')}</h5>
               <div className="d-flex gap-2">
                 <input
                   type="file"
@@ -219,17 +229,13 @@ function QuizManagement({ quizzes, onQuizUpdate, showModal, setShowModal }) {
                 <Button 
                   variant="outline-secondary"
                   onClick={() => fileInputRef.current.click()}
-                  className="d-flex align-items-center"
                 >
-                  <i className="bi bi-file-earmark-arrow-up me-2"></i>
                   {t('quiz.management.importJson')}
                 </Button>
                 <Button 
                   variant="primary"
                   onClick={handleAddQuestion}
-                  className="d-flex align-items-center"
                 >
-                  <i className="bi bi-plus-lg me-2"></i>
                   {t('quiz.creation.addQuestion')}
                 </Button>
               </div>
@@ -296,19 +302,6 @@ function QuizManagement({ quizzes, onQuizUpdate, showModal, setShowModal }) {
                 </Card.Body>
               </Card>
             ))}
-
-            <Button variant="secondary" onClick={handleAddQuestion} className="mb-3">
-              Add Question
-            </Button>
-
-            <div className="d-flex justify-content-end">
-              <Button variant="secondary" className="me-2" onClick={() => setShowModal(false)}>
-                Cancel
-              </Button>
-              <Button variant="primary" type="submit">
-                Save Quiz
-              </Button>
-            </div>
           </Form>
         </Modal.Body>
       </Modal>
