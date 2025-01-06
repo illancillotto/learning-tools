@@ -4,7 +4,28 @@ const seedrandom = require('seedrandom');
 
 exports.createQuiz = async (req, res) => {
   try {
+    // Add debugging logs
+    console.log('Create Quiz - Auth Debug:', {
+      user: req.user,
+      headers: req.headers.authorization,
+      body: req.body
+    });
+
     const { title, timeLimit, questions } = req.body;
+    
+    // Check if user is authenticated with more detailed error
+    if (!req.user) {
+      return res.status(401).json({ 
+        message: 'User not authenticated - req.user is missing'
+      });
+    }
+
+    if (!req.user.id) {
+      return res.status(401).json({ 
+        message: 'User not authenticated - req.user.id is missing',
+        user: req.user
+      });
+    }
     
     // Validate required fields
     if (!title || !timeLimit || !questions) {
