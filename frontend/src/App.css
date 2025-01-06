@@ -36,3 +36,108 @@
     transform: rotate(360deg);
   }
 }
+
+.sidebar {
+  background-color: #f8f9fa;
+  min-height: 100vh;
+  padding: 1rem;
+}
+
+.nav-link.active {
+  background-color: #e9ecef;
+  border-radius: 0.25rem;
+}
+
+.stats-card {
+  transition: all 0.3s ease;
+}
+
+.stats-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.main-content {
+  padding: 1rem;
+  margin-left: 16.666667%; /* Matches Col-md-2 width */
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 0;
+  }
+  
+  .sidebar {
+    position: static !important;
+    min-height: auto;
+  }
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .stats-card {
+    margin-bottom: 1rem;
+  }
+
+  .table-responsive {
+    font-size: 0.875rem;
+  }
+
+  .mobile-menu {
+    transition: transform 0.3s ease-in-out;
+  }
+
+  .mobile-menu.show {
+    transform: translateX(0);
+  }
+
+  .mobile-menu.hide {
+    transform: translateX(-100%);
+  }
+}
+
+/* Improved table responsiveness */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Better touch targets for mobile */
+.btn, .nav-link {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+/* Mobile menu styles */
+@media (max-width: 768px) {
+  .nav-link {
+    padding: 1rem 0;
+    font-size: 1.1rem;
+    border-bottom: 1px solid #eee;
+  }
+
+  .nav-link:last-child {
+    border-bottom: none;
+  }
+
+  .btn {
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+  }
+
+  /* Ensure buttons have proper spacing */
+  .d-grid.gap-2 {
+    gap: 0.75rem !important;
+  }
+
+  /* Remove default button styles in mobile menu */
+  .btn-primary {
+    border-radius: 4px;
+  }
+
+  /* Improve mobile header appearance */
+  .sticky-top {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+}
