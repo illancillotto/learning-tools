@@ -11,6 +11,7 @@ function Dashboard() {
   const [quizzes, setQuizzes] = useState([]);
   const [activeTab, setActiveTab] = useState('quizzes');
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showQuizModal, setShowQuizModal] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -73,6 +74,11 @@ function Dashboard() {
     } catch (error) {
       console.error('Error exporting results:', error);
     }
+  };
+
+  const handleCreateNewQuiz = () => {
+    setActiveTab('quizzes');
+    setShowQuizModal(true);
   };
 
   return (
@@ -185,10 +191,18 @@ function Dashboard() {
                 <Card.Body>
                   <h6>Quick Actions</h6>
                   <div className="d-grid gap-2">
-                    <Button variant="primary" size="sm" onClick={() => navigate('/admin/quiz/new')}>
+                    <Button 
+                      variant="primary" 
+                      size="sm" 
+                      onClick={handleCreateNewQuiz}
+                    >
                       Create New Quiz
                     </Button>
-                    <Button variant="secondary" size="sm" onClick={exportResults}>
+                    <Button 
+                      variant="secondary" 
+                      size="sm" 
+                      onClick={exportResults}
+                    >
                       Export Results
                     </Button>
                   </div>
@@ -221,7 +235,7 @@ function Dashboard() {
 
           {/* Routes Content */}
           <Routes>
-            <Route path="/" element={<QuizManagement quizzes={quizzes} onQuizUpdate={fetchQuizzes} />} />
+            <Route path="/" element={<QuizManagement quizzes={quizzes} onQuizUpdate={fetchQuizzes} showModal={showQuizModal} setShowModal={setShowQuizModal} />} />
             <Route path="/monitoring" element={<StudentMonitoring activeStudents={activeStudents} />} />
           </Routes>
         </Col>

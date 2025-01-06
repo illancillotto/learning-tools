@@ -1,15 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Table, Button, Modal, Form } from 'react-bootstrap';
 import api from '../../services/api';
 
-function QuizManagement({ quizzes, onQuizUpdate }) {
-  const [showModal, setShowModal] = useState(false);
+function QuizManagement({ quizzes, onQuizUpdate, showModal, setShowModal }) {
   const [currentQuiz, setCurrentQuiz] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
     timeLimit: 30,
     questions: []
   });
+
+  // Reset form when modal is opened
+  useEffect(() => {
+    if (showModal && !currentQuiz) {
+      setFormData({
+        title: '',
+        timeLimit: 30,
+        questions: []
+      });
+    }
+  }, [showModal, currentQuiz]);
 
   const handleAddQuestion = () => {
     setFormData(prev => ({
