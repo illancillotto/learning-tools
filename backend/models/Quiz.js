@@ -33,7 +33,7 @@ const QuizSchema = new mongoose.Schema({
   questionCount: {
     type: Number,
     default: function() {
-      return this.questions ? this.questions.length : 0
+      return this.questions ? this.questions.length : 0;
     }
   },
   questions: [QuestionSchema],

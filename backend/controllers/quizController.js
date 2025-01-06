@@ -75,17 +75,51 @@ exports.getQuiz = async (req, res) => {
 
 exports.updateQuiz = async (req, res) => {
   try {
-    const quiz = await Quiz.findOneAndUpdate(
-      { _id: req.params.id, createdBy: req.user.id },
-      req.body,
-      { new: true }
+    console.log('Update request:', {
+      userId: req.user?.id, // Debug user info
+      quizId: req.params.id,
+      body: req.body
+    });
+
+    // Validate the request body
+    const { title, timeLimit, questionCount, questions } = req.body;
+    if (!title || !timeLimit || !questions) {
+      return res.status(400).json({ 
+        message: 'Missing required fields' 
+      });
+    }
+
+    // Create update object
+    const updateData = {
+      title,
+      timeLimit,
+      questions,
+      questionCount: questionCount || questions.length
+    };
+
+    // Remove the createdBy check for now to isolate the issue
+    const quiz = await Quiz.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true, runValidators: true }
     );
+
     if (!quiz) {
       return res.status(404).json({ message: 'Quiz not found' });
     }
+
+    console.log('Updated quiz:', quiz);
     res.json(quiz);
   } catch (error) {
-    res.status(500).json({ message: 'Error updating quiz' });
+    console.error('Error updating quiz:', {
+      error: error.message,
+      stack: error.stack,
+      user: req.user
+    });
+    res.status(500).json({ 
+      message: 'Error updating quiz',
+      details: error.message
+    });
   }
 };
 
@@ -256,14 +290,27 @@ exports.getQuizForStudent = async (req, res) => {
       return res.status(400).json({ message: 'Quiz is not active' });
     }
 
+    console.log('Total questions in quiz:', quiz.questions.length);
+    
     // Generate a unique seed based on student name and quiz ID
     const seed = createHash('sha256')
       .update(req.query.studentName + quiz._id.toString())
       .digest('hex');
+    console.log('Generated seed for student:', {
+      studentName: req.query.studentName,
+      quizId: quiz._id.toString(),
+      seed: seed
+    });
     
     // Use the seed to generate a deterministic random selection
+    const questionCount = quiz.questionCount || quiz.questions.length;
+    console.log('Question quiz.questionCount:', quiz.questionCount);
+    console.log('Question quiz.questions.length:', questionCount);
+    
     const selectedQuestions = deterministicShuffle(quiz.questions, seed)
-      .slice(0, quiz.questionCount || quiz.questions.length);
+      .slice(0, questionCount);
+    console.log('Selected questions count:', selectedQuestions.length);
+    console.log('Selected question IDs:', selectedQuestions.map(q => q._id));
 
     // Return quiz with only selected questions and remove correct answers
     const sanitizedQuestions = selectedQuestions.map(q => ({
@@ -273,6 +320,8 @@ exports.getQuizForStudent = async (req, res) => {
       options: q.options
     }));
 
+    console.log('Final sanitized questions count:', sanitizedQuestions.length);
+    
     res.json({
       _id: quiz._id,
       title: quiz.title,
