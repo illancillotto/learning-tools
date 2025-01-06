@@ -11,7 +11,6 @@ function QuizManagement({ quizzes, onQuizUpdate, showModal, setShowModal }) {
     timeLimit: 30,
     questions: []
   });
-  const [questionCount, setQuestionCount] = useState(10);
   const [jsonError, setJsonError] = useState('');
   const fileInputRef = useRef();
 
@@ -92,19 +91,10 @@ function QuizManagement({ quizzes, onQuizUpdate, showModal, setShowModal }) {
           return;
         }
         
-        if (jsonData.questionPool.length < questionCount) {
-          setJsonError(t('quiz.management.notEnoughQuestions'));
-          return;
-        }
-        
-        // Randomly select questions from pool
-        const selectedQuestions = shuffleArray(jsonData.questionPool)
-          .slice(0, questionCount);
-        
         setFormData({
           title: jsonData.title,
           timeLimit: jsonData.timeLimit,
-          questions: selectedQuestions
+          questions: jsonData.questionPool
         });
         
         setShowModal(true);
@@ -164,12 +154,26 @@ function QuizManagement({ quizzes, onQuizUpdate, showModal, setShowModal }) {
                   <td>{quiz.timeLimit} {t('quiz.management.minutes')}</td>
                   <td>{quiz.questions.length} {t('quiz.management.questionCount')}</td>
                   <td>
-                    <Button variant="info" size="sm" className="me-2" onClick={() => handleEdit(quiz)}>
-                      {t('quiz.management.edit')}
-                    </Button>
-                    <Button variant="danger" size="sm" onClick={() => handleDelete(quiz._id)}>
-                      {t('quiz.management.delete')}
-                    </Button>
+                    <div className="d-flex gap-2 justify-content-end">
+                      <Button 
+                        variant="outline-primary"
+                        size="sm"
+                        className="d-flex align-items-center"
+                        onClick={() => handleEdit(quiz)}
+                      >
+                        <i className="bi bi-pencil-square me-1"></i>
+                        {t('quiz.management.edit')}
+                      </Button>
+                      <Button 
+                        variant="outline-danger"
+                        size="sm"
+                        className="d-flex align-items-center"
+                        onClick={() => handleDelete(quiz._id)}
+                      >
+                        <i className="bi bi-trash me-1"></i>
+                        {t('quiz.management.delete')}
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
