@@ -1,0 +1,12 @@
+{
+    "title": "Sample Quiz",
+    "timeLimit": 30,
+    "questionPool": [
+      {
+        "text": "What is the capital of France?",
+        "type": "multiple-choice",
+        "options": ["London", "Berlin", "Paris", "Madrid"],
+        "correctAnswer": "Paris"
+      }
+    ]
+  }

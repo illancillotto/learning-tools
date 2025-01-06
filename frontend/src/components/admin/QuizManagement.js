@@ -1,14 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Table, Button, Modal, Form } from 'react-bootstrap';
+import React, { useState, useEffect, useRef } from 'react';
+import { Card, Table, Button, Modal, Form, Alert } from 'react-bootstrap';
 import api from '../../services/api';
+import { useTranslation } from '../../contexts/LanguageContext';
 
 function QuizManagement({ quizzes, onQuizUpdate, showModal, setShowModal }) {
+  const { t } = useTranslation();
   const [currentQuiz, setCurrentQuiz] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
     timeLimit: 30,
     questions: []
   });
+  const [questionCount, setQuestionCount] = useState(10);
+  const [jsonError, setJsonError] = useState('');
+  const fileInputRef = useRef();
 
   // Reset form when modal is opened
   useEffect(() => {
@@ -20,7 +25,7 @@ function QuizManagement({ quizzes, onQuizUpdate, showModal, setShowModal }) {
       });
     }
   }, [showModal, currentQuiz]);
-
+ 
   const handleAddQuestion = () => {
     setFormData(prev => ({
       ...prev,
@@ -75,42 +80,95 @@ function QuizManagement({ quizzes, onQuizUpdate, showModal, setShowModal }) {
     }
   };
 
+  const handleJsonImport = (event) => {
+    const file = event.target.files[0];
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      try {
+        const jsonData = JSON.parse(e.target.result);
+        if (!validateQuizJson(jsonData)) {
+          setJsonError(t('quiz.management.invalidJson'));
+          return;
+        }
+        
+        if (jsonData.questionPool.length < questionCount) {
+          setJsonError(t('quiz.management.notEnoughQuestions'));
+          return;
+        }
+        
+        // Randomly select questions from pool
+        const selectedQuestions = shuffleArray(jsonData.questionPool)
+          .slice(0, questionCount);
+        
+        setFormData({
+          title: jsonData.title,
+          timeLimit: jsonData.timeLimit,
+          questions: selectedQuestions
+        });
+        
+        setShowModal(true);
+      } catch (error) {
+        setJsonError(t('quiz.management.invalidJson'));
+      }
+    };
+    
+    reader.readAsText(file);
+  };
+  
+  const handleJsonExport = (quiz) => {
+    const jsonData = {
+      title: quiz.title,
+      timeLimit: quiz.timeLimit,
+      questionPool: quiz.questions
+    };
+    
+    const blob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${quiz.title.toLowerCase().replace(/\s+/g, '-')}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
   return (
     <>
       <Card>
         <Card.Body>
           <div className="d-flex justify-content-between align-items-center mb-3">
-            <h3>Quiz Management</h3>
+            <h3>{t('quiz.management.title')}</h3>
             <Button onClick={() => {
               setCurrentQuiz(null);
               setFormData({ title: '', timeLimit: 30, questions: [] });
               setShowModal(true);
             }}>
-              Create New Quiz
+              {t('dashboard.createNewQuiz')}
             </Button>
           </div>
 
           <Table responsive>
             <thead>
               <tr>
-                <th>Title</th>
-                <th>Time Limit</th>
-                <th>Questions</th>
-                <th>Actions</th>
+                <th>{t('quiz.management.title')}</th>
+                <th>{t('quiz.management.timeLimit')}</th>
+                <th>{t('quiz.management.questions')}</th>
+                <th>{t('quiz.management.actions')}</th>
               </tr>
             </thead>
             <tbody>
               {quizzes.map(quiz => (
                 <tr key={quiz._id}>
                   <td>{quiz.title}</td>
-                  <td>{quiz.timeLimit} minutes</td>
-                  <td>{quiz.questions.length} questions</td>
+                  <td>{quiz.timeLimit} {t('quiz.management.minutes')}</td>
+                  <td>{quiz.questions.length} {t('quiz.management.questionCount')}</td>
                   <td>
                     <Button variant="info" size="sm" className="me-2" onClick={() => handleEdit(quiz)}>
-                      Edit
+                      {t('quiz.management.edit')}
                     </Button>
                     <Button variant="danger" size="sm" onClick={() => handleDelete(quiz._id)}>
-                      Delete
+                      {t('quiz.management.delete')}
                     </Button>
                   </td>
                 </tr>
@@ -122,12 +180,14 @@ function QuizManagement({ quizzes, onQuizUpdate, showModal, setShowModal }) {
 
       <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">
         <Modal.Header closeButton>
-          <Modal.Title>{currentQuiz ? 'Edit Quiz' : 'Create New Quiz'}</Modal.Title>
+          <Modal.Title>
+            {currentQuiz ? t('quiz.creation.editTitle') : t('quiz.creation.title')}
+          </Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form onSubmit={handleSubmit}>
             <Form.Group className="mb-3">
-              <Form.Label>Quiz Title</Form.Label>
+              <Form.Label>{t('quiz.creation.quizTitle')}</Form.Label>
               <Form.Control
                 type="text"
                 value={formData.title}
@@ -137,7 +197,7 @@ function QuizManagement({ quizzes, onQuizUpdate, showModal, setShowModal }) {
             </Form.Group>
 
             <Form.Group className="mb-3">
-              <Form.Label>Time Limit (minutes)</Form.Label>
+              <Form.Label>{t('quiz.creation.timeLimit')}</Form.Label>
               <Form.Control
                 type="number"
                 value={formData.timeLimit}
@@ -146,7 +206,35 @@ function QuizManagement({ quizzes, onQuizUpdate, showModal, setShowModal }) {
               />
             </Form.Group>
 
-            <h5>Questions</h5>
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h5>{t('quiz.creation.questions')}</h5>
+              <div className="d-flex gap-2">
+                <input
+                  type="file"
+                  accept=".json"
+                  ref={fileInputRef}
+                  style={{ display: 'none' }}
+                  onChange={handleJsonImport}
+                />
+                <Button 
+                  variant="outline-secondary"
+                  onClick={() => fileInputRef.current.click()}
+                  className="d-flex align-items-center"
+                >
+                  <i className="bi bi-file-earmark-arrow-up me-2"></i>
+                  {t('quiz.management.importJson')}
+                </Button>
+                <Button 
+                  variant="primary"
+                  onClick={handleAddQuestion}
+                  className="d-flex align-items-center"
+                >
+                  <i className="bi bi-plus-lg me-2"></i>
+                  {t('quiz.creation.addQuestion')}
+                </Button>
+              </div>
+            </div>
+
             {formData.questions.map((question, index) => (
               <Card key={index} className="mb-3">
                 <Card.Body>
@@ -225,6 +313,31 @@ function QuizManagement({ quizzes, onQuizUpdate, showModal, setShowModal }) {
         </Modal.Body>
       </Modal>
     </>
+  );
+}
+
+// Utility function to shuffle array
+function shuffleArray(array) {
+  const newArray = [...array];
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
+}
+
+// Validate JSON structure
+function validateQuizJson(json) {
+  return (
+    json.title &&
+    typeof json.timeLimit === 'number' &&
+    Array.isArray(json.questionPool) &&
+    json.questionPool.every(q => 
+      q.text && 
+      q.type && 
+      (q.type === 'multiple-choice' ? 
+        Array.isArray(q.options) && q.correctAnswer : true)
+    )
   );
 }
 

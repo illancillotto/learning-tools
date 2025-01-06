@@ -1,0 +1,14 @@
+{
+    "questions": [
+      {
+        "text": "What is the capital of France?",
+        "type": "multiple-choice",
+        "options": ["London", "Berlin", "Paris", "Madrid"],
+        "correctAnswer": "Paris"
+      },
+      {
+        "text": "Explain the concept of photosynthesis.",
+        "type": "open-ended"
+      }
+    ]
+  }

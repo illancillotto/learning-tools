@@ -1,19 +1,22 @@
 import React from 'react';
 import { Card, Table, Badge } from 'react-bootstrap';
+import { useTranslation } from '../../contexts/LanguageContext';
 
 function StudentMonitoring({ activeStudents }) {
+  const { t } = useTranslation();
+
   return (
     <Card>
       <Card.Body>
-        <h3>Student Monitoring</h3>
+        <h3>{t('student.monitoring.title')}</h3>
         <Table responsive>
           <thead>
             <tr>
-              <th>Student Name</th>
-              <th>Status</th>
-              <th>Current Quiz</th>
-              <th>Time Remaining</th>
-              <th>Progress</th>
+              <th>{t('student.monitoring.name')}</th>
+              <th>{t('student.monitoring.status')}</th>
+              <th>{t('student.monitoring.currentQuiz')}</th>
+              <th>{t('student.monitoring.timeRemaining')}</th>
+              <th>{t('student.monitoring.progress')}</th>
             </tr>
           </thead>
           <tbody>
@@ -22,7 +25,7 @@ function StudentMonitoring({ activeStudents }) {
                 <td>{student.name}</td>
                 <td>
                   <Badge bg={student.status === 'connected' ? 'success' : 'danger'}>
-                    {student.status}
+                    {t(`student.monitoring.${student.status}`)}
                   </Badge>
                 </td>
                 <td>{student.currentQuiz || 'N/A'}</td>

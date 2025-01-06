@@ -5,6 +5,8 @@ import QuizManagement from './QuizManagement';
 import StudentMonitoring from './StudentMonitoring';
 import socket from '../../services/socket';
 import api from '../../services/api';
+import { useTranslation } from '../../contexts/LanguageContext';
+import LanguageSwitcher from '../common/LanguageSwitcher';
 
 function Dashboard() {
   const [activeStudents, setActiveStudents] = useState([]);
@@ -13,6 +15,7 @@ function Dashboard() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showQuizModal, setShowQuizModal] = useState(false);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   useEffect(() => {
     socket.connect();
@@ -41,9 +44,8 @@ function Dashboard() {
     });
 
     socket.on('student-attempted-leave', (data) => {
-      // Show a more prominent notification
-      const notification = new Notification('Student Attempted to Leave', {
-        body: `${data.studentName} attempted to leave the quiz`,
+      const notification = new Notification(t('dashboard.notifications.studentLeaveTitle'), {
+        body: t('dashboard.notifications.studentLeaveBody').replace('{studentName}', data.studentName),
         icon: '/favicon.ico'
       });
     });
@@ -86,7 +88,7 @@ function Dashboard() {
       {/* Mobile Header */}
       <div className="d-md-none bg-white p-3 sticky-top border-bottom">
         <div className="d-flex justify-content-between align-items-center">
-          <h4 className="mb-0">Admin Dashboard</h4>
+          <h4 className="mb-0">{t('dashboard.title')}</h4>
           <Button 
             variant="primary"
             onClick={() => setShowMobileMenu(!showMobileMenu)}
@@ -125,7 +127,7 @@ function Dashboard() {
                 className="text-primary"
                 onClick={() => setShowMobileMenu(false)}
               >
-                Quiz Management
+                {t('dashboard.navigation.quizManagement')}
               </Nav.Link>
               <Nav.Link 
                 as={Link} 
@@ -133,9 +135,11 @@ function Dashboard() {
                 className="text-primary"
                 onClick={() => setShowMobileMenu(false)}
               >
-                Student Monitoring
+                {t('dashboard.navigation.studentMonitoring')}
               </Nav.Link>
             </Nav>
+
+            <LanguageSwitcher className="mb-4" />
 
             <div className="d-grid gap-2">
               <Button 
@@ -145,7 +149,7 @@ function Dashboard() {
                   setShowMobileMenu(false);
                 }}
               >
-                Create New Quiz
+                {t('dashboard.createNewQuiz')}
               </Button>
               <Button 
                 variant="secondary" 
@@ -154,7 +158,7 @@ function Dashboard() {
                   setShowMobileMenu(false);
                 }}
               >
-                Export Results
+                {t('dashboard.exportResults')}
               </Button>
             </div>
           </div>
@@ -165,7 +169,8 @@ function Dashboard() {
         {/* Sidebar - Desktop */}
         <Col md={2} className="d-none d-md-block border-end vh-100 position-fixed">
           <div className="d-flex flex-column h-100 p-3">
-            <h4 className="mb-4">Admin Dashboard</h4>
+            <h4 className="mb-0">{t('dashboard.title')}</h4>
+            <LanguageSwitcher className="mt-2 mb-4" />
             
             <Nav className="flex-column mb-auto">
               <Nav.Link 
@@ -174,7 +179,7 @@ function Dashboard() {
                 className={activeTab === 'quizzes' ? 'active' : ''}
                 onClick={() => setActiveTab('quizzes')}
               >
-                Quiz Management
+                {t('dashboard.navigation.quizManagement')}
               </Nav.Link>
               <Nav.Link 
                 as={Link}
@@ -182,28 +187,28 @@ function Dashboard() {
                 className={activeTab === 'monitoring' ? 'active' : ''}
                 onClick={() => setActiveTab('monitoring')}
               >
-                Student Monitoring
+                {t('dashboard.navigation.studentMonitoring')}
               </Nav.Link>
             </Nav>
 
             <div className="mt-auto">
               <Card className="bg-light">
                 <Card.Body>
-                  <h6>Quick Actions</h6>
+                  <h6>{t('dashboard.quickActions')}</h6>
                   <div className="d-grid gap-2">
                     <Button 
                       variant="primary" 
                       size="sm" 
                       onClick={handleCreateNewQuiz}
                     >
-                      Create New Quiz
+                      {t('dashboard.createNewQuiz')}
                     </Button>
                     <Button 
                       variant="secondary" 
                       size="sm" 
                       onClick={exportResults}
                     >
-                      Export Results
+                      {t('dashboard.exportResults')}
                     </Button>
                   </div>
                 </Card.Body>
@@ -217,10 +222,10 @@ function Dashboard() {
           {/* Stats Cards */}
           <Row className="g-3 mb-4">
             {[
-              { title: 'Active Students', value: activeStudents.length },
-              { title: 'Total Quizzes', value: quizzes.length },
-              { title: 'Active Quizzes', value: quizzes.filter(q => q.status === 'active').length },
-              { title: 'Completed Quizzes', value: quizzes.filter(q => q.status === 'completed').length }
+              { title: t('dashboard.stats.activeStudents'), value: activeStudents.length },
+              { title: t('dashboard.stats.totalQuizzes'), value: quizzes.length },
+              { title: t('dashboard.stats.activeQuizzes'), value: quizzes.filter(q => q.status === 'active').length },
+              { title: t('dashboard.stats.completedQuizzes'), value: quizzes.filter(q => q.status === 'completed').length }
             ].map((stat, index) => (
               <Col xs={6} md={3} key={index}>
                 <Card className="text-center h-100">
