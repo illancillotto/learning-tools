@@ -2,13 +2,14 @@ const express = require('express');
 const router = express.Router();
 const quizController = require('../controllers/quizController');
 const studentController = require('../controllers/studentController');
+const auth = require('../middleware/auth');
 
 // Public routes (no auth required)
 router.get('/active', quizController.getActiveQuiz);
 router.post('/student/join', studentController.joinQuiz);
 
 // Protected routes (require auth)
-router.get('/', quizController.getQuizzes);
+router.get('/', auth, quizController.getQuizzes);
 router.get('/:id', quizController.getQuiz);
 router.post('/', quizController.createQuiz);
 router.put('/:id', quizController.updateQuiz);

@@ -64,16 +64,31 @@ function Dashboard() {
   const fetchQuizzes = async () => {
     try {
       const token = localStorage.getItem('token');
+      console.log('Token when fetching:', token); // Debug token
+
       if (!token) {
         console.error('No auth token found');
         navigate('/login');
         return;
       }
 
-      const response = await api.get('/api/quiz');
+      // Add explicit headers to debug auth issues
+      const response = await api.get('/api/quiz', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('Quiz response:', response.data); // Debug response
       setQuizzes(response.data);
     } catch (error) {
-      console.error('Error fetching quizzes:', error);
+      console.error('Error fetching quizzes:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      
       if (error.response?.status === 401) {
         navigate('/login');
       }

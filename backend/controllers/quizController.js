@@ -50,9 +50,13 @@ exports.createQuiz = async (req, res) => {
 
 exports.getQuizzes = async (req, res) => {
   try {
-    const quizzes = await Quiz.find({ createdBy: req.user.id });
+    // Add logging to debug
+    console.log('User requesting quizzes:', req.user);
+    
+    const quizzes = await Quiz.find();
     res.json(quizzes);
   } catch (error) {
+    console.error('Error in getQuizzes:', error);
     res.status(500).json({ message: 'Error fetching quizzes' });
   }
 };
