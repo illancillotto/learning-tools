@@ -73,7 +73,7 @@ function Dashboard() {
       }
 
       // Add explicit headers to debug auth issues
-      const response = await api.get('/api/quiz', {
+      const response = await api.get('/quiz', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -117,7 +117,7 @@ function Dashboard() {
 
   const handleQuizActivation = async (quizId, active) => {
     try {
-      await api.put(`/api/quiz/${quizId}/activate`, { active });
+      await api.put(`/quiz/${quizId}/activate`, { active });
       await fetchQuizzes(); // Refresh quiz list
       
       // Show success notification or feedback

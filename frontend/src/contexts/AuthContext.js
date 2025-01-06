@@ -17,7 +17,7 @@ export function AuthProvider({ children }) {
   const login = async (credentials) => {
     try {
       console.log('Attempting login with:', credentials);
-      const response = await api.post('/api/auth/login', credentials);
+      const response = await api.post('/auth/login', credentials);
       console.log('Login response:', response.data);
       
       const { token, user } = response.data;
