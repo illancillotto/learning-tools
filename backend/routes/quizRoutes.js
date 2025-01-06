@@ -14,7 +14,7 @@ router.get('/:id', quizController.getQuiz);
 router.post('/', quizController.createQuiz);
 router.put('/:id', quizController.updateQuiz);
 router.delete('/:id', quizController.deleteQuiz);
-router.put('/:id/activate', quizController.activateQuiz);
+router.put('/:id/activate', auth, quizController.activateQuiz);
 
 // Quiz submission routes
 router.post('/:id/answer', quizController.submitAnswer);

@@ -117,7 +117,7 @@ function Dashboard() {
 
   const handleQuizActivation = async (quizId, active) => {
     try {
-      await api.put(`/quiz/${quizId}/activate`, { active });
+      await api.put(`/api/quiz/${quizId}/activate`, { active });
       await fetchQuizzes(); // Refresh quiz list
       
       // Show success notification or feedback
@@ -127,7 +127,11 @@ function Dashboard() {
       
       // You might want to add a toast/notification system here
     } catch (error) {
-      console.error('Error activating quiz:', error);
+      console.error('Error activating quiz:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
       // Handle error - show error message
     }
   };
