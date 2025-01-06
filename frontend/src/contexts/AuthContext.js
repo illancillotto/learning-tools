@@ -16,13 +16,29 @@ export function AuthProvider({ children }) {
 
   const login = async (credentials) => {
     try {
-      const response = await api.post('/auth/login', credentials);
+      console.log('Attempting login with:', credentials);
+      const response = await api.post('/api/auth/login', credentials);
+      console.log('Login response:', response.data);
+      
       const { token, user } = response.data;
       
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
+      if (!token || !user) {
+        console.error('Missing token or user data in response');
+        return false;
+      }
       
+      // Store token first
+      localStorage.setItem('token', token);
+      console.log('Token stored:', token);
+      
+      // Then store user
+      localStorage.setItem('user', JSON.stringify(user));
       setCurrentUser(user);
+      
+      // Verify token was stored
+      const storedToken = localStorage.getItem('token');
+      console.log('Verified stored token:', storedToken);
+      
       return true;
     } catch (error) {
       console.error('Login error:', error);

@@ -16,10 +16,19 @@ function Login() {
     e.preventDefault();
     setError('');
     
-    const success = await login(credentials);
-    if (success) {
-      navigate('/admin');
-    } else {
+    try {
+      console.log('Submitting login form...');
+      const success = await login(credentials);
+      console.log('Login success:', success);
+      
+      if (success) {
+        console.log('Navigating to admin...');
+        navigate('/admin');
+      } else {
+        setError(t('auth.login.error'));
+      }
+    } catch (err) {
+      console.error('Login submission error:', err);
       setError(t('auth.login.error'));
     }
   };

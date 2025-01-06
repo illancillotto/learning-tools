@@ -62,9 +62,25 @@ function QuizPage() {
   useEffect(() => {
     const fetchQuiz = async () => {
       try {
-        const response = await api.get(`/quiz/${quizId}`);
+        const studentName = sessionStorage.getItem('studentName');
+        if (!studentName) {
+          console.error('No student name found');
+          navigate('/');
+          return;
+        }
+
+        const response = await api.get(`/quiz/${quizId}`, {
+          params: { studentName }
+        });
+        
+        if (!response.data || !response.data.questions || response.data.questions.length === 0) {
+          console.error('Invalid quiz data received');
+          navigate('/');
+          return;
+        }
+
         setQuiz(response.data);
-        setTimeLeft(response.data.timeLimit * 60); // Convert minutes to seconds
+        setTimeLeft(response.data.timeLimit * 60);
       } catch (error) {
         console.error('Error fetching quiz:', error);
         navigate('/');

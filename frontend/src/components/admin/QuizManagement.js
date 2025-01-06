@@ -9,6 +9,7 @@ function QuizManagement({ quizzes, onQuizUpdate, showModal, setShowModal }) {
   const [formData, setFormData] = useState({
     title: '',
     timeLimit: 30,
+    questionCount: 10,
     questions: []
   });
   const [jsonError, setJsonError] = useState('');
@@ -20,6 +21,7 @@ function QuizManagement({ quizzes, onQuizUpdate, showModal, setShowModal }) {
       setFormData({
         title: '',
         timeLimit: 30,
+        questionCount: 10,
         questions: []
       });
     }
@@ -63,6 +65,7 @@ function QuizManagement({ quizzes, onQuizUpdate, showModal, setShowModal }) {
     setFormData({
       title: quiz.title,
       timeLimit: quiz.timeLimit,
+      questionCount: quiz.questionCount || quiz.questions.length,
       questions: quiz.questions
     });
     setShowModal(true);
@@ -131,7 +134,7 @@ function QuizManagement({ quizzes, onQuizUpdate, showModal, setShowModal }) {
             <h3>{t('quiz.management.title')}</h3>
             <Button onClick={() => {
               setCurrentQuiz(null);
-              setFormData({ title: '', timeLimit: 30, questions: [] });
+              setFormData({ title: '', timeLimit: 30, questionCount: 10, questions: [] });
               setShowModal(true);
             }}>
               {t('dashboard.createNewQuiz')}
@@ -208,6 +211,27 @@ function QuizManagement({ quizzes, onQuizUpdate, showModal, setShowModal }) {
                 onChange={(e) => setFormData(prev => ({ ...prev, timeLimit: parseInt(e.target.value) }))}
                 required
               />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>{t('quiz.creation.studentQuestionCount')}</Form.Label>
+              <Form.Control
+                type="number"
+                value={formData.questionCount}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  questionCount: Math.min(
+                    parseInt(e.target.value) || 1,
+                    formData.questions.length
+                  )
+                }))}
+                min={1}
+                max={formData.questions.length}
+                required
+              />
+              <Form.Text className="text-muted">
+                {t('quiz.creation.questionCountHelp', { total: formData.questions.length })}
+              </Form.Text>
             </Form.Group>
 
             <div className="d-flex gap-2 mb-4">

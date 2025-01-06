@@ -1,28 +1,25 @@
 const express = require('express');
 const router = express.Router();
 const quizController = require('../controllers/quizController');
-const auth = require('../middleware/auth');
+const studentController = require('../controllers/studentController');
 
-// Admin routes (protected)
-router.post('/', auth, quizController.createQuiz);
-router.get('/', auth, quizController.getQuizzes);
-router.get('/results/export', auth, quizController.exportResults);
+// Public routes (no auth required)
+router.get('/active', quizController.getActiveQuiz);
+router.post('/student/join', studentController.joinQuiz);
 
-// JSON handling routes
-router.post('/import-json', auth, quizController.importQuizJson);
-router.get('/:id/export-json', auth, quizController.exportQuizJson);
-router.post('/validate-json', auth, quizController.validateQuizJson);
-
-// Quiz management routes
+// Protected routes (require auth)
+router.get('/', quizController.getQuizzes);
 router.get('/:id', quizController.getQuiz);
-router.put('/:id', auth, quizController.updateQuiz);
-router.delete('/:id', auth, quizController.deleteQuiz);
+router.post('/', quizController.createQuiz);
+router.put('/:id', quizController.updateQuiz);
+router.delete('/:id', quizController.deleteQuiz);
+router.put('/:id/activate', quizController.activateQuiz);
 
-// Student routes (no auth required)
+// Quiz submission routes
 router.post('/:id/answer', quizController.submitAnswer);
 router.post('/:id/submit', quizController.submitQuiz);
 
-// Active quiz route (must be before /:id route)
-router.get('/active', quizController.getActiveQuiz);
+// Quiz results
+router.get('/results/export', quizController.exportResults);
 
 module.exports = router;

@@ -14,6 +14,13 @@ function Dashboard() {
   const [activeTab, setActiveTab] = useState('quizzes');
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showQuizModal, setShowQuizModal] = useState(false);
+  const [currentQuiz, setCurrentQuiz] = useState(null);
+  const [formData, setFormData] = useState({
+    title: '',
+    timeLimit: 30,
+    questionCount: 10,
+    questions: []
+  });
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -56,10 +63,20 @@ function Dashboard() {
 
   const fetchQuizzes = async () => {
     try {
-      const response = await api.get('/quiz');
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No auth token found');
+        navigate('/login');
+        return;
+      }
+
+      const response = await api.get('/api/quiz');
       setQuizzes(response.data);
     } catch (error) {
       console.error('Error fetching quizzes:', error);
+      if (error.response?.status === 401) {
+        navigate('/login');
+      }
     }
   };
 
@@ -81,6 +98,47 @@ function Dashboard() {
   const handleCreateNewQuiz = () => {
     setActiveTab('quizzes');
     setShowQuizModal(true);
+  };
+
+  const handleQuizActivation = async (quizId, active) => {
+    try {
+      await api.put(`/quiz/${quizId}/activate`, { active });
+      await fetchQuizzes(); // Refresh quiz list
+      
+      // Show success notification or feedback
+      const message = active ? 
+        t('quiz.management.activationSuccess') : 
+        t('quiz.management.deactivationSuccess');
+      
+      // You might want to add a toast/notification system here
+    } catch (error) {
+      console.error('Error activating quiz:', error);
+      // Handle error - show error message
+    }
+  };
+
+  const handleEdit = (quiz) => {
+    setCurrentQuiz(quiz);
+    setFormData({
+      title: quiz.title,
+      timeLimit: quiz.timeLimit,
+      questionCount: quiz.questionCount,
+      questions: quiz.questions
+    });
+    setShowQuizModal(true);
+  };
+
+  const handleDelete = async (quizId) => {
+    if (window.confirm(t('quiz.management.deleteConfirmation'))) {
+      try {
+        await api.delete(`/quiz/${quizId}`);
+        await fetchQuizzes(); // Refresh quiz list
+        // Show success notification
+      } catch (error) {
+        console.error('Error deleting quiz:', error);
+        // Handle error - show error message
+      }
+    }
   };
 
   return (
@@ -237,6 +295,63 @@ function Dashboard() {
               </Col>
             ))}
           </Row>
+
+          {/* Quiz List with Activation Buttons */}
+          <Card className="mb-4">
+            <Card.Body>
+              <Table responsive>
+                <thead>
+                  <tr>
+                    <th>{t('quiz.management.title')}</th>
+                    <th>{t('quiz.management.timeLimit')}</th>
+                    <th>{t('quiz.management.questions')}</th>
+                    <th>{t('quiz.management.status')}</th>
+                    <th className="text-end">{t('quiz.management.actions')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {quizzes.map(quiz => (
+                    <tr key={quiz._id}>
+                      <td>{quiz.title}</td>
+                      <td>{quiz.timeLimit} {t('quiz.management.minutes')}</td>
+                      <td>{quiz.questions.length} {t('quiz.management.questionCount')}</td>
+                      <td>{quiz.status}</td>
+                      <td>
+                        <div className="d-flex gap-2 justify-content-end">
+                          {quiz.status !== 'completed' && (
+                            <Button
+                              variant={quiz.status === 'active' ? 'warning' : 'success'}
+                              size="sm"
+                              onClick={() => handleQuizActivation(quiz._id, quiz.status !== 'active')}
+                            >
+                              {quiz.status === 'active' ? 
+                                t('quiz.management.deactivate') : 
+                                t('quiz.management.activate')
+                              }
+                            </Button>
+                          )}
+                          <Button 
+                            variant="outline-primary"
+                            size="sm"
+                            onClick={() => handleEdit(quiz)}
+                          >
+                            {t('quiz.management.edit')}
+                          </Button>
+                          <Button 
+                            variant="outline-danger"
+                            size="sm"
+                            onClick={() => handleDelete(quiz._id)}
+                          >
+                            {t('quiz.management.delete')}
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </Card.Body>
+          </Card>
 
           {/* Routes Content */}
           <Routes>

@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const questionSchema = new mongoose.Schema({
+const QuestionSchema = new mongoose.Schema({
   text: {
     type: String,
     required: true
@@ -21,27 +21,34 @@ const questionSchema = new mongoose.Schema({
   }
 });
 
-const quizSchema = new mongoose.Schema({
+const QuizSchema = new mongoose.Schema({
   title: {
     type: String,
     required: true
   },
   timeLimit: {
     type: Number,
-    required: true,
-    min: 1
+    required: true
   },
-  questions: [questionSchema],
+  questionCount: {
+    type: Number,
+    default: function() {
+      return this.questions ? this.questions.length : 0
+    }
+  },
+  questions: [QuestionSchema],
   status: {
     type: String,
-    enum: ['draft', 'active', 'completed'],
-    default: 'draft'
+    enum: ['active', 'inactive', 'completed'],
+    default: 'inactive'
   },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   }
-}, { timestamps: true });
+}, {
+  timestamps: true
+});
 
-module.exports = mongoose.model('Quiz', quizSchema);
+module.exports = mongoose.model('Quiz', QuizSchema);

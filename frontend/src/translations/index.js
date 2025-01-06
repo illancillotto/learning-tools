@@ -37,7 +37,21 @@ const translations = {
           notEnoughQuestions: "Not enough questions in pool",
           loadQuestions: 'Load Questions',
           questionsLoaded: 'Questions loaded successfully',
-          errorLoadingQuestions: 'Error loading questions'
+          errorLoadingQuestions: 'Error loading questions',
+          activate: 'Activate Quiz',
+          deactivate: 'Deactivate Quiz',
+          activationSuccess: 'Quiz activated successfully',
+          deactivationSuccess: 'Quiz deactivated successfully',
+          activationError: 'Error activating quiz',
+          onlyOneActiveQuiz: 'Only one quiz can be active at a time',
+          status: 'Stato',
+          activate: 'Attiva Quiz',
+          deactivate: 'Disattiva Quiz',
+          activationSuccess: 'Quiz attivato con successo',
+          deactivationSuccess: 'Quiz disattivato con successo',
+          deleteConfirmation: 'Sei sicuro di voler eliminare questo quiz?',
+          deleteSuccess: 'Quiz eliminato con successo',
+          deleteError: 'Errore durante l\'eliminazione del quiz'
         },
         creation: {
           title: 'Create New Quiz',
@@ -53,7 +67,9 @@ const translations = {
           selectAnswer: 'Select correct answer',
           addQuestion: 'Add Question',
           cancel: 'Cancel',
-          save: 'Save Quiz'
+          save: 'Save Quiz',
+          studentQuestionCount: "Number of Questions per Student",
+          questionCountHelp: "Each student will receive this many random questions from the total pool of {total} questions"
         }
       },
       student: {
@@ -76,7 +92,8 @@ const translations = {
           title: 'Welcome to the Quiz',
           enterName: 'Enter your name',
           startButton: 'Start Quiz',
-          nameRequired: 'Please enter your name'
+          nameRequired: 'Please enter your name',
+          noActiveQuiz: 'No active quiz available or error joining quiz'
         }
       },
       auth: {
@@ -127,7 +144,21 @@ const translations = {
           notEnoughQuestions: "Non ci sono abbastanza domande nel pool",
           loadQuestions: 'Carica Domande',
           questionsLoaded: 'Domande caricate con successo',
-          errorLoadingQuestions: 'Errore nel caricamento delle domande'
+          errorLoadingQuestions: 'Errore nel caricamento delle domande',
+          activate: 'Attiva Quiz',
+          deactivate: 'Disattiva Quiz',
+          activationSuccess: 'Quiz attivato con successo',
+          deactivationSuccess: 'Quiz disattivato con successo',
+          activationError: 'Errore durante l\'attivazione del quiz',
+          onlyOneActiveQuiz: 'Può essere attivo solo un quiz alla volta',
+          status: 'Stato',
+          activate: 'Attiva Quiz',
+          deactivate: 'Disattiva Quiz',
+          activationSuccess: 'Quiz attivato con successo',
+          deactivationSuccess: 'Quiz disattivato con successo',
+          deleteConfirmation: 'Sei sicuro di voler eliminare questo quiz?',
+          deleteSuccess: 'Quiz eliminato con successo',
+          deleteError: 'Errore durante l\'eliminazione del quiz'
         },
         creation: {
           title: 'Crea Nuovo Quiz',
@@ -143,7 +174,9 @@ const translations = {
           selectAnswer: 'Seleziona risposta corretta',
           addQuestion: 'Aggiungi Domanda',
           cancel: 'Annulla',
-          save: 'Salva Quiz'
+          save: 'Salva Quiz',
+          studentQuestionCount: "Numero di Domande per Studente",
+          questionCountHelp: "Ogni studente riceverà questo numero di domande casuali dal pool totale di {total} domande"
         }
       },
       student: {
@@ -163,10 +196,11 @@ const translations = {
           submit: 'Invia Quiz'
         },
         landing: {
-          title: 'Benvenuto al Quiz',
-          enterName: 'Inserisci il tuo nome',
+          title: 'Benvenuto',
+          enterName: 'Inserisci il tuo nome e cognome nel formato nome.cognome',
           startButton: 'Inizia Quiz',
-          nameRequired: 'Inserisci il tuo nome per favore'
+          nameRequired: 'Inserisci nome.cognome',
+          noActiveQuiz: 'Nessun quiz attivo disponibile o errore durante l\'accesso al quiz'
         }
       },
       auth: {

@@ -4,15 +4,22 @@ import translations from '../translations';
 const LanguageContext = createContext();
 
 export function LanguageProvider({ children }) {
-  const [language, setLanguage] = useState('en');
+  const [language, setLanguage] = useState('it');
 
-  const t = (key) => {
+  const t = (key, params = {}) => {
     const keys = key.split('.');
     let value = translations[language];
+    
     for (const k of keys) {
-      value = value[k];
+      value = value?.[k];
     }
-    return value || key;
+
+    if (!value) return key;
+
+    return Object.entries(params).reduce(
+      (str, [key, value]) => str.replace(`{${key}}`, value),
+      value
+    );
   };
 
   return (
