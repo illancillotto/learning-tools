@@ -69,7 +69,7 @@ function QuizPage() {
           return;
         }
 
-        const response = await api.get(`/quiz/${quizId}`, {
+        const response = await api.get(`/quiz/exec/${quizId}/student`, {
           params: { studentName }
         });
         
@@ -81,6 +81,13 @@ function QuizPage() {
 
         setQuiz(response.data);
         setTimeLeft(response.data.timeLimit * 60);
+        
+        const initialAnswers = {};
+        response.data.questions.forEach((_, index) => {
+          initialAnswers[index] = '';
+        });
+        setAnswers(initialAnswers);
+        
       } catch (error) {
         console.error('Error fetching quiz:', error);
         navigate('/');

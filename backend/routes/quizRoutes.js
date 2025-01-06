@@ -8,9 +8,13 @@ const auth = require('../middleware/auth');
 router.get('/active', quizController.getActiveQuiz);
 router.post('/student/join', studentController.joinQuiz);
 
+// Student route to get randomized subset of questions
+// This needs to be BEFORE the /:id route to prevent route conflicts
+router.get('/exec/:id/student', quizController.getQuizForStudent);
+
 // Protected routes (require auth)
 router.get('/', auth, quizController.getQuizzes);
-router.get('/:id', quizController.getQuiz);
+router.get('/:id', auth, quizController.getQuiz);
 router.post('/', quizController.createQuiz);
 router.put('/:id', quizController.updateQuiz);
 router.delete('/:id', quizController.deleteQuiz);
