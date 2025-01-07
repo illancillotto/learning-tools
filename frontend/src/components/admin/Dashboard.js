@@ -414,11 +414,17 @@ function Dashboard() {
                       </td>
                       <td>
                         <Button 
-                          variant="link" 
-                          className="p-0 text-decoration-none"
+                          variant="link"
+                          className="text-decoration-none d-inline-flex align-items-center gap-2"
                           onClick={() => handleShowSubmissions(quiz._id)}
                         >
-                          {(submissions[quiz._id]?.length || 0)} Consegne
+                          <div className="d-flex align-items-center">
+                            <i className="bi bi-file-text me-2"></i>
+                            <span className="badge rounded-pill bg-info text-white">
+                              {(submissions[quiz._id]?.length || 0)}
+                            </span>
+                          </div>
+                          {t('quiz.management.submissionCount')}
                         </Button>
                       </td>
                       <td>
@@ -576,11 +582,17 @@ function QuizList({ quizzes, submissions, onActivate, onEdit, onDelete, onShowSu
                   </td>
                   <td>
                     <Button 
-                      variant="link" 
-                      className="p-0 text-decoration-none"
+                      variant="link"
+                      className="text-decoration-none d-inline-flex align-items-center gap-2"
                       onClick={() => onShowSubmissions(quiz._id)}
                     >
-                      {(submissions[quiz._id]?.length || 0)} {t('quiz.management.submissionCount')}
+                      <div className="d-flex align-items-center">
+                        <i className="bi bi-file-text me-2"></i>
+                        <span className="badge rounded-pill bg-info text-white">
+                          {(submissions[quiz._id]?.length || 0)}
+                        </span>
+                      </div>
+                      {t('quiz.management.submissionCount')}
                     </Button>
                   </td>
                   <td>
