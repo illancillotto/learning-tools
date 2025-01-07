@@ -177,6 +177,10 @@ function Dashboard() {
     }
   };
 
+  const handleViewSubmissions = (quizId) => {
+    navigate(`/admin/quiz/${quizId}/submissions`);
+  };
+
   return (
     <Container fluid className="p-0">
       {/* Mobile Header */}
@@ -372,16 +376,12 @@ function Dashboard() {
                       <td>{quiz.questionCount} {t('quiz.management.questionCount')}</td>
                       <td>{quiz.status}</td>
                       <td>
-                        {submissions[quiz._id]?.length || 0} {t('quiz.management.submissionCount')}
-                        {submissions[quiz._id]?.length > 0 && (
-                          <Button
-                            variant="link"
-                            size="sm"
-                            onClick={() => navigate(`quiz/${quiz._id}/submissions`)}
-                          >
-                            {t('quiz.management.viewDetails')}
-                          </Button>
-                        )}
+                        <Button 
+                          onClick={() => handleViewSubmissions(quiz._id)}
+                          variant="link"
+                        >
+                          {quiz.submissions?.length || 0} Consegne
+                        </Button>
                       </td>
                       <td>
                         <div className="d-flex gap-2 justify-content-end">

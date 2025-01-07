@@ -400,9 +400,19 @@ exports.activateQuiz = async (req, res) => {
 
 exports.getQuizSubmissions = async (req, res) => {
   try {
-    const submissions = await StudentSubmission.find({ quizId: req.params.id })
+    const { id } = req.params;
+    
+    // Add validation for quiz ID
+    if (!id || id === 'undefined') {
+      return res.status(400).json({ 
+        message: 'Invalid quiz ID' 
+      });
+    }
+
+    const submissions = await StudentSubmission.find({ quizId: id })
       .select('studentName status startTime endTime answers')
       .sort('-createdAt');
+    
     res.json(submissions);
   } catch (error) {
     console.error('Error fetching submissions:', error);

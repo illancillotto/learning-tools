@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Table, Badge, Button } from 'react-bootstrap';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { useTranslation } from '../../contexts/LanguageContext';
 
@@ -9,14 +9,21 @@ function QuizSubmissions() {
   const [quiz, setQuiz] = useState(null);
   const { id } = useParams();
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    fetchSubmissions();
-    fetchQuiz();
+    if (id && id !== 'undefined') {
+      fetchSubmissions();
+      fetchQuiz();
+    } else {
+      console.error('Invalid quiz ID:', id);
+    }
   }, [id]);
 
   const fetchSubmissions = async () => {
     try {
+      if (!id || id === 'undefined') return;
+      
       const response = await api.get(`/quiz/${id}/submissions`);
       setSubmissions(response.data);
     } catch (error) {

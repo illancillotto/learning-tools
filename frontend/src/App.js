@@ -34,7 +34,14 @@ function App() {
                   </PrivateRoute>
                 } 
               />
-              <Route path="/admin/quiz/:id/submissions" element={<QuizSubmissions />} />
+              <Route 
+                path="/admin/quiz/:id/submissions" 
+                element={
+                  <PrivateRoute>
+                    <QuizSubmissions />
+                  </PrivateRoute>
+                } 
+              />
             </Routes>
           </div>
         </Router>
