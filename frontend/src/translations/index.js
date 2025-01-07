@@ -51,7 +51,9 @@ const translations = {
           deactivationSuccess: 'Quiz disattivato con successo',
           deleteConfirmation: 'Sei sicuro di voler eliminare questo quiz?',
           deleteSuccess: 'Quiz eliminato con successo',
-          deleteError: 'Errore durante l\'eliminazione del quiz'
+          deleteError: 'Errore durante l\'eliminazione del quiz',
+          totalQuestions: 'Total Questions',
+          questionsPerStudent: 'Questions per Student'
         },
         creation: {
           title: 'Create New Quiz',
@@ -158,7 +160,9 @@ const translations = {
           deactivationSuccess: 'Quiz disattivato con successo',
           deleteConfirmation: 'Sei sicuro di voler eliminare questo quiz?',
           deleteSuccess: 'Quiz eliminato con successo',
-          deleteError: 'Errore durante l\'eliminazione del quiz'
+          deleteError: 'Errore durante l\'eliminazione del quiz',
+          totalQuestions: 'Domande Totali',
+          questionsPerStudent: 'Domande per Studente'
         },
         creation: {
           title: 'Crea Nuovo Quiz',

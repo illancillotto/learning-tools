@@ -324,6 +324,7 @@ function Dashboard() {
                     <th>{t('quiz.management.title')}</th>
                     <th>{t('quiz.management.timeLimit')}</th>
                     <th>{t('quiz.management.questions')}</th>
+                    <th>{t('quiz.management.questionsPerStudent')}</th>
                     <th>{t('quiz.management.status')}</th>
                     <th className="text-end">{t('quiz.management.actions')}</th>
                   </tr>
@@ -334,6 +335,7 @@ function Dashboard() {
                       <td>{quiz.title}</td>
                       <td>{quiz.timeLimit} {t('quiz.management.minutes')}</td>
                       <td>{quiz.questions.length} {t('quiz.management.questionCount')}</td>
+                      <td>{quiz.questionCount} {t('quiz.management.questionCount')}</td>
                       <td>{quiz.status}</td>
                       <td>
                         <div className="d-flex gap-2 justify-content-end">
