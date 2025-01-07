@@ -45,19 +45,39 @@ function QuizPage() {
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Socket connection
-    const socket = io(process.env.REACT_APP_SOCKET_URL);
+    const socket = io(process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000', {
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      timeout: 20000
+    });
+
+    // Join as student
     socket.emit('student-joined', {
       studentName: sessionStorage.getItem('studentName'),
-      quizId
+      quizId,
+      timeLimit: quiz?.timeLimit * 60
     });
+
+    // Send progress updates more frequently
+    const progressInterval = setInterval(() => {
+      if (socket.connected && quiz) {
+        const progress = (Object.keys(answers).length / quiz.questions.length) * 100;
+        socket.emit('student-progress-update', {
+          progress,
+          timeRemaining: timeLeft
+        });
+      }
+    }, 1000);
 
     // Cleanup
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(progressInterval);
       socket.disconnect();
     };
-  }, [quizId]);
+  }, [quizId, answers, timeLeft, quiz]);
 
   useEffect(() => {
     const fetchQuiz = async () => {
