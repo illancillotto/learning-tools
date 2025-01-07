@@ -11,7 +11,7 @@ exports.createQuiz = async (req, res) => {
       body: req.body
     });
 
-    const { title, timeLimit, questions } = req.body;
+    const { title, timeLimit, questions, questionCount } = req.body;
     
     // Check if user is authenticated with more detailed error
     if (!req.user) {
@@ -55,6 +55,7 @@ exports.createQuiz = async (req, res) => {
       title,
       timeLimit,
       questions,
+      questionCount: questionCount || questions.length,
       createdBy: req.user.id,
       status: 'inactive'
     });
@@ -103,14 +104,14 @@ exports.updateQuiz = async (req, res) => {
     });
 
     // Validate the request body
-    const { title, timeLimit, questionCount, questions } = req.body;
+    const { title, timeLimit, questions, questionCount } = req.body;
     if (!title || !timeLimit || !questions) {
       return res.status(400).json({ 
         message: 'Missing required fields' 
       });
     }
 
-    // Create update object
+    // Create update object with explicit questionCount
     const updateData = {
       title,
       timeLimit,
@@ -331,7 +332,7 @@ exports.getQuizForStudent = async (req, res) => {
     const selectedQuestions = deterministicShuffle(quiz.questions, seed)
       .slice(0, questionCount);
     console.log('Selected questions count:', selectedQuestions.length);
-    console.log('Selected question IDs:', selectedQuestions.map(q => q._id));
+    //console.log('Selected question IDs:', selectedQuestions.map(q => q._id));
 
     // Return quiz with only selected questions and remove correct answers
     const sanitizedQuestions = selectedQuestions.map(q => ({
