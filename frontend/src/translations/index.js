@@ -119,6 +119,9 @@ const translations = {
           loginButton: 'Login',
           error: 'Invalid credentials'
         }
+      },
+      common: {
+        close: 'Close'
       }
     },
     it: {
@@ -237,6 +240,9 @@ const translations = {
           loginButton: 'Login',
           error: 'Invalid credentials'
         }
+      },
+      common: {
+        close: 'Chiudi'
       }
     }
   };

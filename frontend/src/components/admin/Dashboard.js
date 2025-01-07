@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Table, Button, Nav, Badge } from 'react-bootstrap';
+import { Container, Row, Col, Card, Table, Button, Nav, Badge, Modal } from 'react-bootstrap';
 import { useNavigate, Routes, Route, Link } from 'react-router-dom';
 import QuizManagement from './QuizManagement';
 import StudentMonitoring from './StudentMonitoring';
@@ -23,6 +23,8 @@ function Dashboard() {
     questions: []
   });
   const [submissions, setSubmissions] = useState({});
+  const [showSubmissionsModal, setShowSubmissionsModal] = useState(false);
+  const [selectedQuizSubmissions, setSelectedQuizSubmissions] = useState(null);
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -175,6 +177,11 @@ function Dashboard() {
 
   const handleViewSubmissions = (quizId) => {
     navigate(`/admin/quiz/${quizId}/submissions`);
+  };
+
+  const handleShowSubmissions = (quizId) => {
+    setSelectedQuizSubmissions(submissions[quizId]);
+    setShowSubmissionsModal(true);
   };
 
   return (
@@ -406,12 +413,13 @@ function Dashboard() {
                         </Badge>
                       </td>
                       <td>
-                        <Link 
-                          to={`/admin/quiz/${quiz._id}/submissions`}
-                          className="text-decoration-none"
+                        <Button 
+                          variant="link" 
+                          className="p-0 text-decoration-none"
+                          onClick={() => handleShowSubmissions(quiz._id)}
                         >
-                          {submissions[quiz._id]?.length || 0} Consegne
-                        </Link>
+                          {(submissions[quiz._id]?.length || 0)} Consegne
+                        </Button>
                       </td>
                       <td>
                         <div className="d-flex gap-2 justify-content-end">
@@ -456,6 +464,7 @@ function Dashboard() {
                   onActivate={handleQuizActivation}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
+                  onShowSubmissions={handleShowSubmissions}
                 />
               } 
             />
@@ -471,19 +480,69 @@ function Dashboard() {
           </Routes>
         </Col>
       </Row>
+
+      {/* Add Modal component */}
+      <Modal 
+        show={showSubmissionsModal} 
+        onHide={() => setShowSubmissionsModal(false)}
+        size="lg"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>{t('quiz.submissions.title')}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedQuizSubmissions && selectedQuizSubmissions.length > 0 ? (
+            <Table responsive>
+              <thead>
+                <tr>
+                  <th>{t('quiz.submissions.studentName')}</th>
+                  <th>{t('quiz.submissions.startTime')}</th>
+                  <th>{t('quiz.submissions.score')}</th>
+                  <th>{t('quiz.management.timeLimit')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedQuizSubmissions.map((submission, index) => (
+                  <tr key={index}>
+                    <td>{submission.studentName}</td>
+                    <td>{new Date(submission.submittedAt).toLocaleDateString('it-IT', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}</td>
+                    <td>{submission.score}/{submission.totalQuestions}</td>
+                    <td>{submission.timeSpent} {t('quiz.management.minutes')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          ) : (
+            <p className="text-center py-3">{t('quiz.submissions.noSubmissions')}</p>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowSubmissionsModal(false)}>
+            {t('common.close')}
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </Container>
   );
 }
 
 // Update QuizList to receive handler functions as props
-function QuizList({ quizzes, submissions, onActivate, onEdit, onDelete }) {
+function QuizList({ quizzes, submissions, onActivate, onEdit, onDelete, onShowSubmissions }) {
+  const { t } = useTranslation();
+
   // Filter quizzes to show only non-active ones
   const savedQuizzes = quizzes.filter(quiz => quiz.status !== 'active');
 
   return (
     <Card className="mb-4">
       <Card.Header className="bg-light">
-        <h5 className="mb-0">Elenco Quiz</h5>
+        <h5 className="mb-0">{t('quiz.management.title')}</h5>
       </Card.Header>
       <Card.Body>
         {savedQuizzes.length === 0 ? (
@@ -516,9 +575,13 @@ function QuizList({ quizzes, submissions, onActivate, onEdit, onDelete }) {
                     </Badge>
                   </td>
                   <td>
-                    <Link to={`/admin/quiz/${quiz._id}/submissions`}>
-                      {(submissions[quiz._id]?.length || 0)} Consegne
-                    </Link>
+                    <Button 
+                      variant="link" 
+                      className="p-0 text-decoration-none"
+                      onClick={() => onShowSubmissions(quiz._id)}
+                    >
+                      {(submissions[quiz._id]?.length || 0)} {t('quiz.management.submissionCount')}
+                    </Button>
                   </td>
                   <td>
                     <div className="d-flex gap-2 justify-content-end">
