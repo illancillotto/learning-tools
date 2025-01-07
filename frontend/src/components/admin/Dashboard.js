@@ -59,9 +59,7 @@ function Dashboard() {
       });
     });
 
-    fetchQuizzes().then(() => {
-      quizzes.forEach(quiz => fetchSubmissions(quiz._id));
-    });
+    fetchQuizzes();
     
     return () => socket.disconnect();
   }, []);
@@ -87,6 +85,8 @@ function Dashboard() {
       
       console.log('Quiz response:', response.data); // Debug response
       setQuizzes(response.data);
+      // After getting quizzes, fetch submissions for each
+      response.data.forEach(quiz => fetchSubmissionsForQuiz(quiz._id));
     } catch (error) {
       console.error('Error fetching quizzes:', {
         message: error.message,
@@ -100,7 +100,7 @@ function Dashboard() {
     }
   };
 
-  const fetchSubmissions = async (quizId) => {
+  const fetchSubmissionsForQuiz = async (quizId) => {
     try {
       const response = await api.get(`/quiz/${quizId}/submissions`);
       setSubmissions(prev => ({
@@ -108,7 +108,7 @@ function Dashboard() {
         [quizId]: response.data
       }));
     } catch (error) {
-      console.error('Error fetching submissions:', error);
+      console.error(`Error fetching submissions for quiz ${quizId}:`, error);
     }
   };
 
@@ -380,7 +380,7 @@ function Dashboard() {
                           onClick={() => handleViewSubmissions(quiz._id)}
                           variant="link"
                         >
-                          {quiz.submissions?.length || 0} Consegne
+                          {submissions[quiz._id]?.length || 0} Consegne
                         </Button>
                       </td>
                       <td>

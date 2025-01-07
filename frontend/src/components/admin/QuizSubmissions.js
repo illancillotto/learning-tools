@@ -8,35 +8,30 @@ function QuizSubmissions() {
   const [submissions, setSubmissions] = useState([]);
   const [quiz, setQuiz] = useState(null);
   const { id } = useParams();
-  const { t } = useTranslation();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   useEffect(() => {
-    if (id && id !== 'undefined') {
-      fetchSubmissions();
-      fetchQuiz();
+    if (id) {
+      fetchQuizAndSubmissions();
     } else {
-      console.error('Invalid quiz ID:', id);
+      navigate('/admin/dashboard');
     }
-  }, [id]);
+  }, [id, navigate]);
 
-  const fetchSubmissions = async () => {
+  const fetchQuizAndSubmissions = async () => {
     try {
-      if (!id || id === 'undefined') return;
-      
-      const response = await api.get(`/quiz/${id}/submissions`);
-      setSubmissions(response.data);
-    } catch (error) {
-      console.error('Error fetching submissions:', error);
-    }
-  };
+      // Fetch both quiz and submissions in parallel
+      const [quizResponse, submissionsResponse] = await Promise.all([
+        api.get(`/quiz/${id}`),
+        api.get(`/quiz/${id}/submissions`)
+      ]);
 
-  const fetchQuiz = async () => {
-    try {
-      const response = await api.get(`/quiz/${id}`);
-      setQuiz(response.data);
+      setQuiz(quizResponse.data);
+      setSubmissions(submissionsResponse.data);
     } catch (error) {
-      console.error('Error fetching quiz:', error);
+      console.error('Error fetching quiz and submissions:', error);
+      navigate('/admin/dashboard');
     }
   };
 
@@ -53,7 +48,10 @@ function QuizSubmissions() {
     <div className="quiz-submissions">
       <Card>
         <Card.Header className="d-flex justify-content-between align-items-center">
-          <h4>{t('quiz.submissions.title')} - {quiz?.title}</h4>        
+          <h4>{t('quiz.submissions.title')} - {quiz?.title}</h4>
+          <Button variant="secondary" onClick={() => navigate('/admin/dashboard')}>
+            {t('common.back')}
+          </Button>
         </Card.Header>
         <Card.Body>
           {submissions.length === 0 ? (
@@ -84,10 +82,10 @@ function QuizSubmissions() {
                         '-'
                       }
                     </td>
-                    <td>{submission.answers.length}</td>
+                    <td>{submission.answers?.length || 0}</td>
                     <td>
                       {submission.status === 'completed' ? 
-                        `${submission.answers.length}/${quiz?.questionCount}` : 
+                        `${submission.score || 0}/${quiz?.questionCount}` : 
                         '-'
                       }
                     </td>
