@@ -7,7 +7,8 @@ const translations = {
         exportResults: 'Export Results',
         navigation: {
           quizManagement: 'Quiz Management',
-          studentMonitoring: 'Student Monitoring'
+          studentMonitoring: 'Student Monitoring',
+          submissions: 'Submissions'
         },
         stats: {
           activeStudents: 'Active Students',
@@ -53,7 +54,9 @@ const translations = {
           deleteSuccess: 'Quiz eliminato con successo',
           deleteError: 'Errore durante l\'eliminazione del quiz',
           totalQuestions: 'Total Questions',
-          questionsPerStudent: 'Questions per Student'
+          questionsPerStudent: 'Questions per Student',
+          submissions: 'Submissions',
+          submissionCount: 'Consegne'
         },
         creation: {
           title: 'Create New Quiz',
@@ -72,6 +75,16 @@ const translations = {
           save: 'Save Quiz',
           studentQuestionCount: "Number of Questions per Student",
           questionCountHelp: "Each student will receive this many random questions from the total pool of {total} questions"
+        },
+        submissions: {
+          title: 'Quiz Submissions',
+          studentName: 'Student Name',
+          status: 'Status',
+          startTime: 'Start Time',
+          endTime: 'End Time',
+          answeredQuestions: 'Answered Questions',
+          score: 'Score',
+          noSubmissions: 'No submissions yet'
         }
       },
       student: {
@@ -116,7 +129,8 @@ const translations = {
         exportResults: 'Esporta Risultati',
         navigation: {
           quizManagement: 'Gestione Quiz',
-          studentMonitoring: 'Monitoraggio Studenti'
+          studentMonitoring: 'Monitoraggio Studenti',
+          submissions: 'Consegne'
         },
         stats: {
           activeStudents: 'Studenti Attivi',
@@ -147,22 +161,20 @@ const translations = {
           loadQuestions: 'Carica Domande',
           questionsLoaded: 'Domande caricate con successo',
           errorLoadingQuestions: 'Errore nel caricamento delle domande',
+          status: 'Stato',
           activate: 'Attiva Quiz',
           deactivate: 'Disattiva Quiz',
           activationSuccess: 'Quiz attivato con successo',
           deactivationSuccess: 'Quiz disattivato con successo',
           activationError: 'Errore durante l\'attivazione del quiz',
           onlyOneActiveQuiz: 'Può essere attivo solo un quiz alla volta',
-          status: 'Stato',
-          activate: 'Attiva Quiz',
-          deactivate: 'Disattiva Quiz',
-          activationSuccess: 'Quiz attivato con successo',
-          deactivationSuccess: 'Quiz disattivato con successo',
           deleteConfirmation: 'Sei sicuro di voler eliminare questo quiz?',
           deleteSuccess: 'Quiz eliminato con successo',
           deleteError: 'Errore durante l\'eliminazione del quiz',
           totalQuestions: 'Domande Totali',
-          questionsPerStudent: 'Domande per Studente'
+          questionsPerStudent: 'Domande per Studente',
+          submissions: 'Consegne',
+          submissionCount: 'Consegne'
         },
         creation: {
           title: 'Crea Nuovo Quiz',
@@ -181,6 +193,16 @@ const translations = {
           save: 'Salva Quiz',
           studentQuestionCount: "Numero di Domande per Studente",
           questionCountHelp: "Ogni studente riceverà questo numero di domande casuali dal pool totale di {total} domande"
+        },
+        submissions: {
+          title: 'Consegne Quiz',
+          studentName: 'Nome Studente',
+          status: 'Stato',
+          startTime: 'Ora Inizio',
+          endTime: 'Ora Fine',
+          answeredQuestions: 'Domande Risposte',
+          score: 'Punteggio',
+          noSubmissions: 'Nessuna consegna'
         }
       },
       student: {

@@ -4,7 +4,7 @@ const quizController = require('../controllers/quizController');
 const studentController = require('../controllers/studentController');
 const authMiddleware = require('../middleware/auth');
 
-// Public routes (no auth required)
+// Public routes (no auth required) 
 router.get('/active', quizController.getActiveQuiz);
 router.post('/student/join', studentController.joinQuiz);
 router.get('/exec/:id/student', quizController.getQuizForStudent);
@@ -18,6 +18,7 @@ router.use(authMiddleware);
 // Protected routes (require auth)
 router.get('/', quizController.getQuizzes);
 router.get('/:id', quizController.getQuiz);
+router.get('/:id/submissions', quizController.getQuizSubmissions);
 router.post('/', quizController.createQuiz);
 router.put('/:id', quizController.updateQuiz);
 router.delete('/:id', quizController.deleteQuiz);

@@ -7,6 +7,7 @@ import socket from '../../services/socket';
 import api from '../../services/api';
 import { useTranslation } from '../../contexts/LanguageContext';
 import LanguageSwitcher from '../common/LanguageSwitcher';
+import QuizSubmissions from './QuizSubmissions';
 
 function Dashboard() {
   const [activeStudents, setActiveStudents] = useState([]);
@@ -21,6 +22,7 @@ function Dashboard() {
     questionCount: 10,
     questions: []
   });
+  const [submissions, setSubmissions] = useState({});
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -57,7 +59,10 @@ function Dashboard() {
       });
     });
 
-    fetchQuizzes();
+    fetchQuizzes().then(() => {
+      quizzes.forEach(quiz => fetchSubmissions(quiz._id));
+    });
+    
     return () => socket.disconnect();
   }, []);
 
@@ -92,6 +97,18 @@ function Dashboard() {
       if (error.response?.status === 401) {
         navigate('/login');
       }
+    }
+  };
+
+  const fetchSubmissions = async (quizId) => {
+    try {
+      const response = await api.get(`/quiz/${quizId}/submissions`);
+      setSubmissions(prev => ({
+        ...prev,
+        [quizId]: response.data
+      }));
+    } catch (error) {
+      console.error('Error fetching submissions:', error);
     }
   };
 
@@ -214,6 +231,14 @@ function Dashboard() {
               >
                 {t('dashboard.navigation.studentMonitoring')}
               </Nav.Link>
+              <Nav.Link 
+                as={Link} 
+                to="/admin/submissions"
+                className="text-primary"
+                onClick={() => setShowMobileMenu(false)}
+              >
+                {t('dashboard.navigation.submissions')}
+              </Nav.Link>
             </Nav>
 
             <LanguageSwitcher className="mb-4" />
@@ -265,6 +290,14 @@ function Dashboard() {
                 onClick={() => setActiveTab('monitoring')}
               >
                 {t('dashboard.navigation.studentMonitoring')}
+              </Nav.Link>
+              <Nav.Link 
+                as={Link}
+                to="/admin/submissions"
+                className={activeTab === 'submissions' ? 'active' : ''}
+                onClick={() => setActiveTab('submissions')}
+              >
+                {t('dashboard.navigation.submissions')}
               </Nav.Link>
             </Nav>
 
@@ -326,6 +359,7 @@ function Dashboard() {
                     <th>{t('quiz.management.questions')}</th>
                     <th>{t('quiz.management.questionsPerStudent')}</th>
                     <th>{t('quiz.management.status')}</th>
+                    <th>{t('quiz.management.submissions')}</th>
                     <th className="text-end">{t('quiz.management.actions')}</th>
                   </tr>
                 </thead>
@@ -337,6 +371,18 @@ function Dashboard() {
                       <td>{quiz.questions.length} {t('quiz.management.questionCount')}</td>
                       <td>{quiz.questionCount} {t('quiz.management.questionCount')}</td>
                       <td>{quiz.status}</td>
+                      <td>
+                        {submissions[quiz._id]?.length || 0} {t('quiz.management.submissionCount')}
+                        {submissions[quiz._id]?.length > 0 && (
+                          <Button
+                            variant="link"
+                            size="sm"
+                            onClick={() => navigate(`quiz/${quiz._id}/submissions`)}
+                          >
+                            {t('quiz.management.viewDetails')}
+                          </Button>
+                        )}
+                      </td>
                       <td>
                         <div className="d-flex gap-2 justify-content-end">
                           {quiz.status !== 'completed' && (
@@ -376,8 +422,15 @@ function Dashboard() {
 
           {/* Routes Content */}
           <Routes>
-            <Route path="/" element={<QuizManagement quizzes={quizzes} onQuizUpdate={fetchQuizzes} showModal={showQuizModal} setShowModal={setShowQuizModal} />} />
+            <Route path="/" element={<QuizManagement 
+              quizzes={quizzes} 
+              onQuizUpdate={fetchQuizzes} 
+              showModal={showQuizModal} 
+              setShowModal={setShowQuizModal} 
+            />} />
             <Route path="/monitoring" element={<StudentMonitoring activeStudents={activeStudents} />} />
+            <Route path="/submissions" element={<QuizSubmissions />} />
+            <Route path="quiz/:id/submissions" element={<QuizSubmissions />} />
           </Routes>
         </Col>
       </Row>

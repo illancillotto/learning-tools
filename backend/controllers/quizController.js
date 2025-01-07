@@ -1,6 +1,7 @@
 const Quiz = require('../models/Quiz');
 const createHash = require('crypto').createHash;
 const seedrandom = require('seedrandom');
+const StudentSubmission = require('../models/Student');
 
 exports.createQuiz = async (req, res) => {
   try {
@@ -187,7 +188,7 @@ exports.exportResults = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: 'Error exporting results' });
   }
-};
+}; 
 
 exports.getActiveQuiz = async (req, res) => {
   try {
@@ -394,6 +395,18 @@ exports.activateQuiz = async (req, res) => {
   } catch (error) {
     console.error('Error activating quiz:', error);
     res.status(500).json({ message: 'quiz.management.activationError' });
+  }
+}; 
+
+exports.getQuizSubmissions = async (req, res) => {
+  try {
+    const submissions = await StudentSubmission.find({ quizId: req.params.id })
+      .select('studentName status startTime endTime answers')
+      .sort('-createdAt');
+    res.json(submissions);
+  } catch (error) {
+    console.error('Error fetching submissions:', error);
+    res.status(500).json({ message: 'Error fetching submissions' });
   }
 };
 
