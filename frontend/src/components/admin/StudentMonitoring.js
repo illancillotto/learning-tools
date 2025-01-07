@@ -1,9 +1,43 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, Table, Badge } from 'react-bootstrap';
 import { useTranslation } from '../../contexts/LanguageContext';
+import io from 'socket.io-client';
 
 function StudentMonitoring({ activeStudents }) {
   const { t } = useTranslation();
+  const [connectedStudents, setConnectedStudents] = useState(activeStudents);
+
+  useEffect(() => {
+    const socket = io(process.env.REACT_APP_API_URL, {
+      transports: ['polling'],
+      polling: {
+        interval: 2000  // Poll every 2 seconds
+      }
+    });
+    
+    // Initial request for active students
+    socket.emit('getActiveStudents');
+
+    // Listen for student updates
+    socket.on('activeStudents', (updatedStudents) => {
+      setConnectedStudents(updatedStudents);
+    });
+
+    // Set up continuous polling
+    socket.on('connect', () => {
+      socket.emit('getActiveStudents');
+    });
+
+    socket.on('disconnect', () => {
+      // Attempt to reconnect
+      socket.connect();
+    });
+
+    // Clean up socket connection on component unmount
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
 
   return (
     <Card>
@@ -20,7 +54,7 @@ function StudentMonitoring({ activeStudents }) {
             </tr>
           </thead>
           <tbody>
-            {activeStudents.map((student, index) => (
+            {connectedStudents.map((student, index) => (
               <tr key={index}>
                 <td>{student.name}</td>
                 <td>
