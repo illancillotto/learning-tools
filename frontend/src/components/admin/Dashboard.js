@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Table, Button, Nav } from 'react-bootstrap';
+import { Container, Row, Col, Card, Table, Button, Nav, Badge } from 'react-bootstrap';
 import { useNavigate, Routes, Route, Link } from 'react-router-dom';
 import QuizManagement from './QuizManagement';
 import StudentMonitoring from './StudentMonitoring';
@@ -144,11 +144,7 @@ function Dashboard() {
       
       // You might want to add a toast/notification system here
     } catch (error) {
-      console.error('Error activating quiz:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status
-      });
+      console.error('Error activating quiz:', error);
       // Handle error - show error message
     }
   };
@@ -271,6 +267,33 @@ function Dashboard() {
         </div>
       </div>
 
+      {/* Mobile Menu */}
+      <div className="d-md-none">
+        <Nav className="flex-column">
+          <Nav.Link 
+            as={Link} 
+            to="/admin/elenco-quiz"
+            className="text-primary"
+          >
+            Elenco Quiz
+          </Nav.Link>
+          <Nav.Link 
+            as={Link} 
+            to="/admin/gestione-quiz"
+            className="text-primary"
+          >
+            Gestione Quiz
+          </Nav.Link>
+          <Nav.Link 
+            as={Link} 
+            to="/admin/monitoraggio-studenti"
+            className="text-primary"
+          >
+            Monitoraggio Studenti
+          </Nav.Link>
+        </Nav>
+      </div>
+
       <Row className="g-0">
         {/* Sidebar - Desktop */}
         <Col md={2} className="d-none d-md-block border-end vh-100 position-fixed">
@@ -281,27 +304,27 @@ function Dashboard() {
             <Nav className="flex-column mb-auto">
               <Nav.Link 
                 as={Link} 
-                to="/admin"
-                className={activeTab === 'quizzes' ? 'active' : ''}
-                onClick={() => setActiveTab('quizzes')}
+                to="/admin/elenco-quiz"
+                className={activeTab === 'elenco-quiz' ? 'active' : ''}
+                onClick={() => setActiveTab('elenco-quiz')}
               >
-                {t('dashboard.navigation.quizManagement')}
+                Elenco Quiz
+              </Nav.Link>
+              <Nav.Link 
+                as={Link} 
+                to="/admin/gestione-quiz"
+                className={activeTab === 'gestione-quiz' ? 'active' : ''}
+                onClick={() => setActiveTab('gestione-quiz')}
+              >
+                Gestione Quiz
               </Nav.Link>
               <Nav.Link 
                 as={Link}
-                to="/admin/monitoring"
+                to="/admin/monitoraggio-studenti"
                 className={activeTab === 'monitoring' ? 'active' : ''}
                 onClick={() => setActiveTab('monitoring')}
               >
-                {t('dashboard.navigation.studentMonitoring')}
-              </Nav.Link>
-              <Nav.Link 
-                as={Link}
-                to="/admin/submissions"
-                className={activeTab === 'submissions' ? 'active' : ''}
-                onClick={() => setActiveTab('submissions')}
-              >
-                {t('dashboard.navigation.submissions')}
+                Monitoraggio Studenti
               </Nav.Link>
             </Nav>
 
@@ -352,64 +375,66 @@ function Dashboard() {
             ))}
           </Row>
 
-          {/* Quiz List with Activation Buttons */}
+          {/* Elenco Quiz Section */}
           <Card className="mb-4">
+            <Card.Header className="bg-light">
+              <h5 className="mb-0">Quiz attivi</h5>
+            </Card.Header>
             <Card.Body>
-              <Table responsive>
+              <Table responsive hover>
                 <thead>
                   <tr>
-                    <th>{t('quiz.management.title')}</th>
-                    <th>{t('quiz.management.timeLimit')}</th>
-                    <th>{t('quiz.management.questions')}</th>
-                    <th>{t('quiz.management.questionsPerStudent')}</th>
-                    <th>{t('quiz.management.status')}</th>
-                    <th>{t('quiz.management.submissions')}</th>
-                    <th className="text-end">{t('quiz.management.actions')}</th>
+                    <th>Gestione Quiz</th>
+                    <th>Limite di Tempo</th>
+                    <th>Domande</th>
+                    <th>Domande per Studente</th>
+                    <th>Stato</th>
+                    <th>Consegne</th>
+                    <th className="text-end">Azioni</th>
                   </tr>
                 </thead>
                 <tbody>
                   {quizzes.map(quiz => (
                     <tr key={quiz._id}>
                       <td>{quiz.title}</td>
-                      <td>{quiz.timeLimit} {t('quiz.management.minutes')}</td>
-                      <td>{quiz.questions.length} {t('quiz.management.questionCount')}</td>
-                      <td>{quiz.questionCount} {t('quiz.management.questionCount')}</td>
-                      <td>{quiz.status}</td>
+                      <td>{quiz.timeLimit} minuti</td>
+                      <td>{quiz.questions.length} domande</td>
+                      <td>{quiz.questionCount} domande</td>
                       <td>
-                        <Button 
-                          onClick={() => handleViewSubmissions(quiz._id)}
-                          variant="link"
+                        <Badge bg={quiz.status === 'active' ? 'success' : 'secondary'}>
+                          {quiz.status === 'active' ? 'Attivo' : 'Inattivo'}
+                        </Badge>
+                      </td>
+                      <td>
+                        <Link 
+                          to={`/admin/quiz/${quiz._id}/submissions`}
+                          className="text-decoration-none"
                         >
                           {submissions[quiz._id]?.length || 0} Consegne
-                        </Button>
+                        </Link>
                       </td>
                       <td>
                         <div className="d-flex gap-2 justify-content-end">
-                          {quiz.status !== 'completed' && (
-                            <Button
-                              variant={quiz.status === 'active' ? 'warning' : 'success'}
-                              size="sm"
-                              onClick={() => handleQuizActivation(quiz._id, quiz.status !== 'active')}
-                            >
-                              {quiz.status === 'active' ? 
-                                t('quiz.management.deactivate') : 
-                                t('quiz.management.activate')
-                              }
-                            </Button>
-                          )}
+                          <Button
+                            variant={quiz.status === 'active' ? 'warning' : 'success'}
+                            size="sm"
+                            onClick={() => handleQuizActivation(quiz._id, quiz.status !== 'active')}
+                          >
+                            {quiz.status === 'active' ? 'Disattiva Quiz' : 'Attiva Quiz'}
+                          </Button>
                           <Button 
                             variant="outline-primary"
                             size="sm"
                             onClick={() => handleEdit(quiz)}
                           >
-                            {t('quiz.management.edit')}
+                            Modifica
                           </Button>
                           <Button 
                             variant="outline-danger"
                             size="sm"
                             onClick={() => handleDelete(quiz._id)}
                           >
-                            {t('quiz.management.delete')}
+                            Elimina
                           </Button>
                         </div>
                       </td>
@@ -422,19 +447,110 @@ function Dashboard() {
 
           {/* Routes Content */}
           <Routes>
-            <Route path="/" element={<QuizManagement 
+            <Route 
+              path="/elenco-quiz" 
+              element={
+                <QuizList 
+                  quizzes={quizzes}
+                  onActivate={handleQuizActivation}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
+              } 
+            />
+            <Route path="/gestione-quiz" element={<QuizManagement 
               quizzes={quizzes} 
               onQuizUpdate={fetchQuizzes} 
               showModal={showQuizModal} 
               setShowModal={setShowQuizModal} 
             />} />
-            <Route path="/monitoring" element={<StudentMonitoring activeStudents={activeStudents} />} />
+            <Route path="/monitoraggio-studenti" element={<StudentMonitoring activeStudents={activeStudents} />} />
             <Route path="/submissions" element={<QuizSubmissions />} />
             <Route path="quiz/:id/submissions" element={<QuizSubmissions />} />
           </Routes>
         </Col>
       </Row>
     </Container>
+  );
+}
+
+// Update QuizList to receive handler functions as props
+function QuizList({ quizzes, onActivate, onEdit, onDelete }) {
+  // Filter quizzes to show only non-active ones
+  const savedQuizzes = quizzes.filter(quiz => quiz.status !== 'active');
+
+  return (
+    <Card className="mb-4">
+      <Card.Header className="bg-light">
+        <h5 className="mb-0">Elenco Quiz</h5>
+      </Card.Header>
+      <Card.Body>
+        {savedQuizzes.length === 0 ? (
+          <div className="text-center py-4">
+            <p>Nessun quiz completato</p>
+          </div>
+        ) : (
+          <Table responsive hover>
+            <thead>
+              <tr>
+                <th>Gestione Quiz</th>
+                <th>Limite di Tempo</th>
+                <th>Domande</th>
+                <th>Domande per Studente</th>
+                <th>Stato</th>
+                <th>Consegne</th>
+                <th className="text-end">Azioni</th>
+              </tr>
+            </thead>
+            <tbody>
+              {savedQuizzes.map(quiz => (
+                <tr key={quiz._id}>
+                  <td>{quiz.title}</td>
+                  <td>{quiz.timeLimit} minuti</td>
+                  <td>{quiz.questions.length} domande</td>
+                  <td>{quiz.questionCount} domande</td>
+                  <td>
+                    <Badge bg="secondary">
+                      Completato
+                    </Badge>
+                  </td>
+                  <td>
+                    <Link to={`/admin/quiz/${quiz._id}/submissions`}>
+                      {quiz.submissions?.length || 0} Consegne
+                    </Link>
+                  </td>
+                  <td>
+                    <div className="d-flex gap-2 justify-content-end">
+                      <Button
+                        variant="success"
+                        size="sm"
+                        onClick={() => onActivate(quiz._id, true)}
+                      >
+                        Attiva Quiz
+                      </Button>
+                      <Button 
+                        variant="outline-primary"
+                        size="sm"
+                        onClick={() => onEdit(quiz)}
+                      >
+                        Modifica
+                      </Button>
+                      <Button 
+                        variant="outline-danger"
+                        size="sm"
+                        onClick={() => onDelete(quiz._id)}
+                      >
+                        Elimina
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </Card.Body>
+    </Card>
   );
 }
 
