@@ -304,19 +304,19 @@ function Dashboard() {
             <Nav className="flex-column mb-auto">
               <Nav.Link 
                 as={Link} 
-                to="/admin/elenco-quiz"
-                className={activeTab === 'elenco-quiz' ? 'active' : ''}
-                onClick={() => setActiveTab('elenco-quiz')}
-              >
-                Elenco Quiz
-              </Nav.Link>
-              <Nav.Link 
-                as={Link} 
                 to="/admin/gestione-quiz"
                 className={activeTab === 'gestione-quiz' ? 'active' : ''}
                 onClick={() => setActiveTab('gestione-quiz')}
               >
                 Gestione Quiz
+              </Nav.Link>
+              <Nav.Link 
+                as={Link} 
+                to="/admin/elenco-quiz"
+                className={activeTab === 'elenco-quiz' ? 'active' : ''}
+                onClick={() => setActiveTab('elenco-quiz')}
+              >
+                Elenco Quiz
               </Nav.Link>
               <Nav.Link 
                 as={Link}
@@ -452,6 +452,7 @@ function Dashboard() {
               element={
                 <QuizList 
                   quizzes={quizzes}
+                  submissions={submissions}
                   onActivate={handleQuizActivation}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
@@ -475,7 +476,7 @@ function Dashboard() {
 }
 
 // Update QuizList to receive handler functions as props
-function QuizList({ quizzes, onActivate, onEdit, onDelete }) {
+function QuizList({ quizzes, submissions, onActivate, onEdit, onDelete }) {
   // Filter quizzes to show only non-active ones
   const savedQuizzes = quizzes.filter(quiz => quiz.status !== 'active');
 
@@ -516,7 +517,7 @@ function QuizList({ quizzes, onActivate, onEdit, onDelete }) {
                   </td>
                   <td>
                     <Link to={`/admin/quiz/${quiz._id}/submissions`}>
-                      {quiz.submissions?.length || 0} Consegne
+                      {(submissions[quiz._id]?.length || 0)} Consegne
                     </Link>
                   </td>
                   <td>
