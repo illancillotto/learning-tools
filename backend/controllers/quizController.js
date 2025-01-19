@@ -174,10 +174,43 @@ exports.submitAnswer = async (req, res) => {
 exports.submitQuiz = async (req, res) => {
   try {
     const { answers, studentName } = req.body;
-    // Implementation for submitting entire quiz
-    res.json({ message: 'Quiz submitted successfully' });
+    const quizId = req.params.id;
+
+    // Validate required fields
+    if (!studentName || !quizId || !answers) {
+      return res.status(400).json({ 
+        message: 'Missing required fields: studentName, quizId, or answers' 
+      });
+    }
+
+    // Convert answers object to array format and preserve empty answers
+    const formattedAnswers = Object.entries(answers).map(([questionIndex, answer]) => ({
+      questionIndex: parseInt(questionIndex),
+      answer: answer === '' ? null : answer // Store empty answers as null
+    }));
+
+    // Create new submission
+    const submission = new StudentSubmission({
+      quizId,
+      studentName,
+      answers: formattedAnswers,
+      status: 'completed',
+      endTime: new Date()
+    });
+
+    await submission.save();
+    
+    console.log('Saved submission:', submission);
+    res.status(201).json({ 
+      message: 'Quiz submitted successfully',
+      submission 
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Error submitting quiz' });
+    console.error('Error submitting quiz:', error);
+    res.status(500).json({ 
+      message: 'Error submitting quiz',
+      error: error.message 
+    });
   }
 };
 
