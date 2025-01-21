@@ -35,6 +35,10 @@ const studentSubmissionSchema = new mongoose.Schema({
     answer: {
       type: mongoose.Schema.Types.Mixed,
       required: true
+    },
+    isCorrect: {
+      type: Boolean,
+      default: false
     }
   }],
   status: {
@@ -43,7 +47,15 @@ const studentSubmissionSchema = new mongoose.Schema({
     default: 'in-progress'
   },
   startTime: Date,
-  endTime: Date
+  endTime: Date,
+  totalQuestions: {
+    type: Number,
+    required: true
+  },
+  correctAnswers: {
+    type: Number,
+    default: 0
+  }
 }, {
   timestamps: true
 });

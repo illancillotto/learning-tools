@@ -16,10 +16,10 @@ module.exports = {
     });
 
     io.on('connection', (socket) => {
-      console.log('New connection:', socket.id);
+      //console.log('New connection:', socket.id);
 
       socket.on('student-joined', (data) => {
-        console.log('Student joined:', data);
+        //console.log('Student joined:', data);
         const studentId = data.studentName; // Use student name as unique identifier
         
         // Store student data
@@ -64,7 +64,7 @@ module.exports = {
       });
 
       socket.on('disconnect', () => {
-        console.log('Disconnected:', socket.id);
+        //console.log('Disconnected:', socket.id);
         const studentId = studentSockets.get(socket.id);
         if (studentId) {
           // Don't immediately remove the student, just update their status

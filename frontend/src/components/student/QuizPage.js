@@ -150,24 +150,29 @@ function QuizPage() {
         ...prev,
         [currentQuestion]: answer
       }));
+      
       // Get the actual question ID from the quiz data
       const questionId = quiz.questions[currentQuestion].id;
-      await api.post(`/quiz/${quizId}/answer`, {
-        questionId,  // Use the actual question ID instead of the index
+      const response = await api.post(`/quiz/${quizId}/answer`, {
+        questionId,
         answer,
         studentName: sessionStorage.getItem('studentName')
       });
-      if (socketRef.current?.connected && quiz) {
-        const progress = (Object.keys(answers).length / quiz.questions.length) * 100;
-        socketRef.current.emit('student-progress-update', {
-          progress,
-          timeRemaining: timeLeft
-        });
+
+      // Update progress based on server response
+      if (response.data.progress) {
+        if (socketRef.current?.connected) {
+          socketRef.current.emit('student-progress-update', {
+            progress: response.data.progress,
+            timeRemaining: timeLeft
+          });
+        }
       }
+
     } catch (error) {
       console.error('Error saving answer:', error);
     }
-  }, [currentQuestion, quizId, quiz, answers, timeLeft]);
+  }, [currentQuestion, quizId, quiz, timeLeft]);
 
   if (!quiz) return <div>Loading...</div>;
 

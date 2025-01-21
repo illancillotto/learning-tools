@@ -166,20 +166,26 @@ exports.submitAnswer = async (req, res) => {
     const { questionId, answer, studentName } = req.body;
     const quizId = req.params.id;
 
-    // Validate required fields
-    if (!questionId || !studentName || !quizId) {
-      return res.status(400).json({
-        message: 'Missing required fields: questionId, studentName, or quizId'
-      });
-    }
-
-    // Find the quiz first to validate the question exists
+    // Find the quiz to check the correct answer
     const quiz = await Quiz.findById(quizId);
     if (!quiz) {
       return res.status(404).json({ message: 'Quiz not found' });
     }
 
-    // Find or create student submission
+    // Find the specific question
+    const question = quiz.questions.find(q => q._id.toString() === questionId);
+    if (!question) {
+      return res.status(404).json({ message: 'Question not found' });
+    }
+
+    // Check if answer is correct (keep this logic on backend only)
+    let isCorrect = false;
+    const normalizedStudentAnswer = String(answer).toLowerCase().trim();
+    const normalizedCorrectAnswer = String(question.correctAnswer).toLowerCase().trim();
+    
+    isCorrect = normalizedStudentAnswer === normalizedCorrectAnswer;
+
+    // Find or update student submission
     let submission = await StudentSubmission.findOne({
       quizId,
       studentName,
@@ -190,39 +196,58 @@ exports.submitAnswer = async (req, res) => {
       submission = new StudentSubmission({
         quizId,
         studentName,
-        answers: [],
         status: 'in-progress',
-        startTime: new Date()
+        startTime: new Date(),
+        totalQuestions: quiz.questions.length,
+        answers: [],
+        correctAnswers: 0
       });
     }
 
     // Update or add the answer
-    const answerIndex = submission.answers.findIndex(
-      a => a.questionId && a.questionId.toString() === questionId.toString()
+    const existingAnswerIndex = submission.answers.findIndex(
+      a => a.questionId.toString() === questionId
     );
 
-    if (answerIndex >= 0) {
-      submission.answers[answerIndex].answer = answer;
+    if (existingAnswerIndex >= 0) {
+      // Update existing answer
+      const wasCorrect = submission.answers[existingAnswerIndex].isCorrect;
+      submission.answers[existingAnswerIndex].answer = answer;
+      submission.answers[existingAnswerIndex].isCorrect = isCorrect;
+      
+      // Update correctAnswers count if needed
+      if (wasCorrect && !isCorrect) {
+        submission.correctAnswers--;
+      } else if (!wasCorrect && isCorrect) {
+        submission.correctAnswers++;
+      }
     } else {
+      // Add new answer
       submission.answers.push({
         questionId,
-        answer
+        answer,
+        isCorrect
       });
+      if (isCorrect) {
+        submission.correctAnswers++;
+      }
     }
 
     await submission.save();
 
+    // Only send back minimal information - remove isCorrect and correctAnswers from response
     res.json({
       message: 'Answer saved successfully',
-      answersCount: submission.answers.length
+      progress: {
+        totalQuestions: quiz.questions.length,
+        answeredQuestions: submission.answers.length,
+        percentComplete: Math.round((submission.answers.length / quiz.questions.length) * 100)
+      }
     });
 
   } catch (error) {
-    console.error('Error in submitAnswer:', error);
-    res.status(500).json({
-      message: 'Error saving answer',
-      error: error.message
-    });
+    console.error('Error submitting answer:', error);
+    res.status(500).json({ message: 'Error submitting answer' });
   }
 };
 
@@ -395,37 +420,23 @@ exports.getQuizForStudent = async (req, res) => {
       return res.status(400).json({ message: 'Quiz is not active' });
     }
 
-    console.log('Total questions in quiz:', quiz.questions.length);
-    
     // Generate a unique seed based on student name and quiz ID
     const seed = createHash('sha256')
       .update(req.query.studentName + quiz._id.toString())
       .digest('hex');
-    console.log('Generated seed for student:', {
-      studentName: req.query.studentName,
-      quizId: quiz._id.toString(),
-      seed: seed
-    });
     
     // Use the seed to generate a deterministic random selection
     const questionCount = quiz.questionCount || quiz.questions.length;
-    console.log('Question quiz.questionCount:', quiz.questionCount);
-    console.log('Question quiz.questions.length:', questionCount);
-    
     const selectedQuestions = deterministicShuffle(quiz.questions, seed)
       .slice(0, questionCount);
-    console.log('Selected questions count:', selectedQuestions.length);
-    //console.log('Selected question IDs:', selectedQuestions.map(q => q._id));
 
-    // Return quiz with only selected questions and remove correct answers
+    // Return quiz with only selected questions and REMOVE correct answers
     const sanitizedQuestions = selectedQuestions.map(q => ({
       id: q._id,
       text: q.text,
       type: q.type,
-      options: q.options
+      options: q.type === 'multiple-choice' ? shuffleArray(q.options) : undefined
     }));
-
-    console.log('Final sanitized questions count:', sanitizedQuestions.length);
     
     res.json({
       _id: quiz._id,
