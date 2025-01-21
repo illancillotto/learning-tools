@@ -3,7 +3,7 @@ const createHash = require('crypto').createHash;
 const seedrandom = require('seedrandom');
 const StudentSubmission = require('../models/Student');
 
-exports.createQuiz = async (req, res) => {
+exports.createQuiz = async (req, res) => { 
   try {
     // Add debugging logs
     console.log('Create Quiz - Auth Debug:', {
@@ -164,52 +164,101 @@ exports.deleteQuiz = async (req, res) => {
 exports.submitAnswer = async (req, res) => {
   try {
     const { questionId, answer, studentName } = req.body;
-    // Implementation for saving individual answers
-    res.json({ message: 'Answer saved successfully' });
+    const quizId = req.params.id;
+
+    // Validate required fields
+    if (!questionId || !studentName || !quizId) {
+      return res.status(400).json({
+        message: 'Missing required fields: questionId, studentName, or quizId'
+      });
+    }
+
+    // Find the quiz first to validate the question exists
+    const quiz = await Quiz.findById(quizId);
+    if (!quiz) {
+      return res.status(404).json({ message: 'Quiz not found' });
+    }
+
+    // Find or create student submission
+    let submission = await StudentSubmission.findOne({
+      quizId,
+      studentName,
+      status: 'in-progress'
+    });
+
+    if (!submission) {
+      submission = new StudentSubmission({
+        quizId,
+        studentName,
+        answers: [],
+        status: 'in-progress',
+        startTime: new Date()
+      });
+    }
+
+    // Update or add the answer
+    const answerIndex = submission.answers.findIndex(
+      a => a.questionId && a.questionId.toString() === questionId.toString()
+    );
+
+    if (answerIndex >= 0) {
+      submission.answers[answerIndex].answer = answer;
+    } else {
+      submission.answers.push({
+        questionId,
+        answer
+      });
+    }
+
+    await submission.save();
+
+    res.json({
+      message: 'Answer saved successfully',
+      answersCount: submission.answers.length
+    });
+
   } catch (error) {
-    res.status(500).json({ message: 'Error saving answer' });
+    console.error('Error in submitAnswer:', error);
+    res.status(500).json({
+      message: 'Error saving answer',
+      error: error.message
+    });
   }
 };
 
 exports.submitQuiz = async (req, res) => {
   try {
-    const { answers, studentName } = req.body;
+    const { studentName } = req.body;
     const quizId = req.params.id;
 
-    // Validate required fields
-    if (!studentName || !quizId || !answers) {
-      return res.status(400).json({ 
-        message: 'Missing required fields: studentName, quizId, or answers' 
+    // Find the in-progress submission
+    const submission = await StudentSubmission.findOne({
+      quizId,
+      studentName,
+      status: 'in-progress'
+    });
+
+    if (!submission) {
+      return res.status(404).json({
+        message: 'No in-progress submission found'
       });
     }
 
-    // Convert answers object to array format and preserve empty answers
-    const formattedAnswers = Object.entries(answers).map(([questionIndex, answer]) => ({
-      questionIndex: parseInt(questionIndex),
-      answer: answer === '' ? null : answer // Store empty answers as null
-    }));
-
-    // Create new submission
-    const submission = new StudentSubmission({
-      quizId,
-      studentName,
-      answers: formattedAnswers,
-      status: 'completed',
-      endTime: new Date()
-    });
-
+    // Update submission status and end time
+    submission.status = 'completed';
+    submission.endTime = new Date();
     await submission.save();
-    
-    console.log('Saved submission:', submission);
-    res.status(201).json({ 
+
+    res.status(200).json({
       message: 'Quiz submitted successfully',
-      submission 
+      submission
     });
+
   } catch (error) {
     console.error('Error submitting quiz:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Error submitting quiz',
-      error: error.message 
+      error: error.message
     });
   }
 };

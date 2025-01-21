@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Card, Form, Button, ProgressBar } from 'react-bootstrap';
 import api from '../../services/api';
@@ -11,18 +11,23 @@ function QuizPage() {
   const [timeLeft, setTimeLeft] = useState(null);
   const { quizId } = useParams();
   const navigate = useNavigate();
+  const socketRef = useRef(null);
   
   const handleSubmitQuiz = useCallback(async () => {
     try {
       await api.post(`/quiz/${quizId}/submit`, {
-        answers,
         studentName: sessionStorage.getItem('studentName')
       });
+
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+      
       navigate('/feedback');
     } catch (error) {
       console.error('Error submitting quiz:', error);
     }
-  }, [quizId, answers, navigate]);
+  }, [quizId, navigate]);
 
   useEffect(() => {
     // Prevent leaving the page
@@ -34,10 +39,12 @@ function QuizPage() {
     const handleVisibilityChange = () => {
       if (document.hidden) {
         // Notify admin through socket that student tried to leave
-        socket.emit('student-attempted-leave', {
-          studentName: sessionStorage.getItem('studentName'),
-          quizId
-        });
+        if (socketRef.current) {
+          socketRef.current.emit('student-attempted-leave', {
+            studentName: sessionStorage.getItem('studentName'),
+            quizId
+          });
+        }
       }
     };
 
@@ -45,7 +52,7 @@ function QuizPage() {
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Socket connection
-    const socket = io(process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000', {
+    socketRef.current = io(process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000', {
       reconnection: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
@@ -53,7 +60,7 @@ function QuizPage() {
     });
 
     // Join as student
-    socket.emit('student-joined', {
+    socketRef.current.emit('student-joined', {
       studentName: sessionStorage.getItem('studentName'),
       quizId,
       timeLimit: quiz?.timeLimit * 60
@@ -61,9 +68,9 @@ function QuizPage() {
 
     // Send progress updates more frequently
     const progressInterval = setInterval(() => {
-      if (socket.connected && quiz) {
+      if (socketRef.current && socketRef.current.connected && quiz) {
         const progress = (Object.keys(answers).length / quiz.questions.length) * 100;
-        socket.emit('student-progress-update', {
+        socketRef.current.emit('student-progress-update', {
           progress,
           timeRemaining: timeLeft
         });
@@ -75,7 +82,9 @@ function QuizPage() {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       clearInterval(progressInterval);
-      socket.disconnect();
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
     };
   }, [quizId, answers, timeLeft, quiz]);
 
@@ -135,19 +144,30 @@ function QuizPage() {
     return () => clearInterval(timer);
   }, [timeLeft, handleSubmitQuiz]);
 
-  const handleAnswerChange = (answer) => {
-    setAnswers(prev => ({
-      ...prev,
-      [currentQuestion]: answer
-    }));
-
-    // Auto-save answer
-    api.post(`/quiz/${quizId}/answer`, {
-      questionId: quiz.questions[currentQuestion].id,
-      answer,
-      studentName: sessionStorage.getItem('studentName')
-    });
-  };
+  const handleAnswerChange = useCallback(async (answer) => {
+    try {
+      setAnswers(prev => ({
+        ...prev,
+        [currentQuestion]: answer
+      }));
+      // Get the actual question ID from the quiz data
+      const questionId = quiz.questions[currentQuestion].id;
+      await api.post(`/quiz/${quizId}/answer`, {
+        questionId,  // Use the actual question ID instead of the index
+        answer,
+        studentName: sessionStorage.getItem('studentName')
+      });
+      if (socketRef.current?.connected && quiz) {
+        const progress = (Object.keys(answers).length / quiz.questions.length) * 100;
+        socketRef.current.emit('student-progress-update', {
+          progress,
+          timeRemaining: timeLeft
+        });
+      }
+    } catch (error) {
+      console.error('Error saving answer:', error);
+    }
+  }, [currentQuestion, quizId, quiz, answers, timeLeft]);
 
   if (!quiz) return <div>Loading...</div>;
 
@@ -168,8 +188,9 @@ function QuizPage() {
                 type="radio"
                 label={option}
                 name="answer"
+                value={option}
                 checked={answers[currentQuestion] === option}
-                onChange={() => handleAnswerChange(option)}
+                onChange={(e) => handleAnswerChange(e.target.value)}
                 className="mb-2"
               />
             ))

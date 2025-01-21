@@ -27,22 +27,25 @@ const studentSubmissionSchema = new mongoose.Schema({
     required: true
   },
   answers: [{
-    questionIndex: Number,
-    answer: mongoose.Schema.Types.Mixed
+    questionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Quiz.questions',
+      required: true
+    },
+    answer: {
+      type: mongoose.Schema.Types.Mixed,
+      required: true
+    }
   }],
   status: {
     type: String,
-    enum: ['in-progress', 'completed'],
-    default: 'completed'
+    enum: ['in-progress', 'completed', 'timed-out'],
+    default: 'in-progress'
   },
-  startTime: {
-    type: Date,
-    default: Date.now
-  },
+  startTime: Date,
   endTime: Date
 }, {
   timestamps: true
 });
 
-module.exports = mongoose.model('StudentSubmission', studentSubmissionSchema);
 module.exports = mongoose.model('StudentSubmission', studentSubmissionSchema);

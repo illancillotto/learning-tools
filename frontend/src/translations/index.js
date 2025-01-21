@@ -109,6 +109,11 @@ const translations = {
           startButton: 'Start Quiz',
           nameRequired: 'Please enter your name',
           noActiveQuiz: 'No active quiz available or error joining quiz'
+        },
+        feedback: {
+          title: 'Quiz Submitted Successfully!',
+          message: 'Thank you for completing the quiz. Your answers have been saved.',
+          returnHome: 'Return to Home'
         }
       },
       auth: {
@@ -230,6 +235,11 @@ const translations = {
           startButton: 'Inizia Quiz',
           nameRequired: 'Inserisci nome.cognome',
           noActiveQuiz: 'Nessun quiz attivo disponibile o errore durante l\'accesso al quiz'
+        },
+        feedback: {
+          title: 'Quiz Completato Con Successo!',
+          message: 'Grazie per aver completato il quiz. Le tue risposte sono state salvate.',
+          returnHome: 'Torna alla Home'
         }
       },
       auth: {

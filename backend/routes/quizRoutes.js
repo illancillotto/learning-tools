@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const quizController = require('../controllers/quizController');
 const studentController = require('../controllers/studentController');
-const authMiddleware = require('../middleware/auth');
+const authMiddleware = require('../middleware/auth'); 
 
 // Public routes (no auth required) 
 router.get('/active', quizController.getActiveQuiz);
