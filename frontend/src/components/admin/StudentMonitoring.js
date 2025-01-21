@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Card, Table, Badge } from 'react-bootstrap';
 import { useTranslation } from '../../contexts/LanguageContext';
 import io from 'socket.io-client';
@@ -6,13 +6,31 @@ import io from 'socket.io-client';
 function StudentMonitoring({ activeStudents }) {
   const { t } = useTranslation();
   const [connectedStudents, setConnectedStudents] = useState(activeStudents || []);
+  const lastUpdateRef = useRef(new Map());
+  const timerIntervalRef = useRef(null);
+
+  // Add timer effect to countdown timeRemaining
+  useEffect(() => {
+    timerIntervalRef.current = setInterval(() => {
+      setConnectedStudents(prevStudents => 
+        prevStudents.map(student => ({
+          ...student,
+          timeRemaining: student.timeRemaining > 0 ? student.timeRemaining - 1 : 0
+        }))
+      );
+    }, 1000);
+
+    return () => {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const socket = io(process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000', {
       transports: ['polling'],
-      polling: {
-        interval: 1000
-      },
+      polling: { interval: 1000 },
       reconnection: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
@@ -20,50 +38,90 @@ function StudentMonitoring({ activeStudents }) {
       timeout: 20000
     });
 
-    // Debug connection status
-    socket.on('connect', () => {
-      console.log('Monitoring connected to socket');
-      socket.emit('getActiveStudents');
+    socket.on('activeStudents', (students) => {
+      console.log('Received students update:', students);
+      setConnectedStudents(prevStudents => {
+        const existingStudentsMap = new Map(
+          prevStudents.map(student => [student.id, { ...student }])
+        );
+
+        const mergedStudents = students.map(newStudent => {
+          const existingStudent = existingStudentsMap.get(newStudent.id);
+          const now = Date.now();
+          
+          if (!existingStudent) {
+            lastUpdateRef.current.set(newStudent.id, now);
+            return {
+              ...newStudent,
+              timeRemaining: newStudent.timeRemaining || 30 * 60 // Convert to seconds if not set
+            };
+          }
+
+          // Handle status changes with debounce
+          let status = newStudent.status;
+          if (newStudent.status !== existingStudent.status) {
+            const lastUpdate = lastUpdateRef.current.get(newStudent.id) || 0;
+            if (now - lastUpdate < 5000) {
+              status = existingStudent.status;
+            } else {
+              lastUpdateRef.current.set(newStudent.id, now);
+            }
+          }
+
+          // Handle time changes
+          let timeRemaining = existingStudent.timeRemaining;
+          if (existingStudent.currentQuiz !== newStudent.currentQuiz) {
+            // Only reset time if quiz changed
+            timeRemaining = newStudent.timeRemaining || 30 * 60;
+          }
+
+          return {
+            ...newStudent,
+            timeRemaining,
+            status
+          };
+        });
+
+        mergedStudents.sort((a, b) => a.name.localeCompare(b.name));
+        return mergedStudents;
+      });
     });
 
-    socket.on('disconnect', () => {
-      console.log('Monitoring disconnected from socket');
-    });
-
-    socket.on('connect_error', (error) => {
-      console.error('Socket connection error:', error);
-    });
-
-    // Set up polling interval
     const pollInterval = setInterval(() => {
       if (socket.connected) {
         socket.emit('getActiveStudents');
       }
-    }, 2000);
-
-    // Listen for active students updates
-    socket.on('activeStudents', (students) => {
-      console.log('Received students update:', students);
-      setConnectedStudents(prevStudents => {
-        // Merge new students with existing ones
-        const updatedStudents = [...students];
-        // Sort by name to maintain consistent order
-        updatedStudents.sort((a, b) => a.name.localeCompare(b.name));
-        return updatedStudents;
-      });
-    });
+    }, 5000);
 
     return () => {
+      lastUpdateRef.current.clear();
       clearInterval(pollInterval);
       socket.disconnect();
     };
   }, []);
 
+  // Format time remaining as MM:SS
+  const formatTime = (seconds) => {
+    if (!seconds && seconds !== 0) return 'N/A';
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Add CSS to reduce visual flickering
+  const tableStyle = {
+    transition: 'all 0.5s ease',
+  };
+
+  const rowStyle = {
+    transition: 'all 0.5s ease',
+  };
+
   return (
     <Card>
       <Card.Body>
         <h3>{t('student.monitoring.title')}</h3>
-        <Table responsive>
+        <Table responsive style={tableStyle}>
           <thead>
             <tr>
               <th>{t('student.monitoring.name')}</th>
@@ -75,22 +133,31 @@ function StudentMonitoring({ activeStudents }) {
           </thead>
           <tbody>
             {connectedStudents.map((student, index) => (
-              <tr key={student.id || index}>
+              <tr 
+                key={student.id || index}
+                style={rowStyle}
+              >
                 <td>{student.name}</td>
                 <td>
-                  <Badge bg={student.status === 'connected' ? 'success' : 'danger'}>
+                  <Badge 
+                    bg={student.status === 'connected' ? 'success' : 'danger'}
+                    style={{ transition: 'all 0.5s ease' }}
+                  >
                     {t(`student.monitoring.${student.status}`)}
                   </Badge>
                 </td>
                 <td>{student.currentQuiz || 'N/A'}</td>
-                <td>{student.timeRemaining ? `${Math.floor(student.timeRemaining / 60)}:${(student.timeRemaining % 60).toString().padStart(2, '0')}` : 'N/A'}</td>
+                <td>{formatTime(student.timeRemaining)}</td>
                 <td>
                   {student.progress ? (
                     <div className="progress">
                       <div
                         className="progress-bar"
                         role="progressbar"
-                        style={{ width: `${student.progress}%` }}
+                        style={{ 
+                          width: `${student.progress}%`,
+                          transition: 'all 0.5s ease'
+                        }}
                         aria-valuenow={student.progress}
                         aria-valuemin="0"
                         aria-valuemax="100"
