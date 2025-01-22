@@ -15,7 +15,7 @@ exports.joinQuiz = async (req, res) => {
       { studentName, quizId, status: 'in-progress' },
       { 
         startTime: new Date(),
-        totalQuestions: quiz.questions.length,
+        totalQuestions: quiz.questionCount,
         correctAnswers: 0
       },
       { upsert: true, new: true }
