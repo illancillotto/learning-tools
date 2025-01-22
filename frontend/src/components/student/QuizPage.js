@@ -1,35 +1,75 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Card, Form, Button, ProgressBar } from 'react-bootstrap';
+import { Container, Card, Form, Button, ProgressBar, Alert } from 'react-bootstrap';
 import api from '../../services/api';
-import { io } from 'socket.io-client';
+import socket, { connectSocket, disconnectSocket } from '../../services/socket';
 
 function QuizPage() {
   const [quiz, setQuiz] = useState(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState({});
   const [timeLeft, setTimeLeft] = useState(null);
+  const [connectionError, setConnectionError] = useState(null);
   const { quizId } = useParams();
   const navigate = useNavigate();
-  const socketRef = useRef(null);
+  const progressInterval = useRef(null);
   
   const handleSubmitQuiz = useCallback(async () => {
     try {
       await api.post(`/quiz/${quizId}/submit`, {
         studentName: sessionStorage.getItem('studentName')
       });
-
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-      }
       
+      disconnectSocket();
       navigate('/feedback');
     } catch (error) {
       console.error('Error submitting quiz:', error);
+      setConnectionError('Failed to submit quiz. Please try again.');
     }
   }, [quizId, navigate]);
 
+  // Socket connection and event handlers
   useEffect(() => {
+    const setupSocket = () => {
+      // Connect socket
+      connectSocket();
+
+      // Socket event handlers
+      socket.on('connect', () => {
+        console.log('Connected to socket server');
+        setConnectionError(null);
+        
+        // Join as student after successful connection
+        socket.emit('student-joined', {
+          studentName: sessionStorage.getItem('studentName'),
+          quizId,
+          timeLimit: quiz?.timeLimit * 60
+        });
+      });
+
+      socket.on('connect_error', (error) => {
+        console.error('Socket connection error:', error);
+        setConnectionError('Connection lost. Attempting to reconnect...');
+      });
+
+      socket.on('join-acknowledged', (data) => {
+        console.log('Join acknowledged:', data);
+      });
+
+      // Start progress updates after connection
+      progressInterval.current = setInterval(() => {
+        if (socket.connected && quiz) {
+          const progress = (Object.keys(answers).length / quiz.questions.length) * 100;
+          socket.emit('student-progress-update', {
+            progress,
+            timeRemaining: timeLeft
+          });
+        }
+      }, 2000); // Update every 2 seconds
+    };
+
+    setupSocket();
+
     // Prevent leaving the page
     const handleBeforeUnload = (e) => {
       e.preventDefault();
@@ -38,56 +78,28 @@ function QuizPage() {
 
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        // Notify admin through socket that student tried to leave
-        if (socketRef.current) {
-          socketRef.current.emit('student-attempted-leave', {
-            studentName: sessionStorage.getItem('studentName'),
-            quizId
-          });
-        }
+        socket.emit('student-attempted-leave', {
+          studentName: sessionStorage.getItem('studentName'),
+          quizId
+        });
       }
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Socket connection
-    socketRef.current = io(process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000', {
-      reconnection: true,
-      reconnectionAttempts: Infinity,
-      reconnectionDelay: 1000,
-      timeout: 20000
-    });
-
-    // Join as student
-    socketRef.current.emit('student-joined', {
-      studentName: sessionStorage.getItem('studentName'),
-      quizId,
-      timeLimit: quiz?.timeLimit * 60
-    });
-
-    // Send progress updates more frequently
-    const progressInterval = setInterval(() => {
-      if (socketRef.current && socketRef.current.connected && quiz) {
-        const progress = (Object.keys(answers).length / quiz.questions.length) * 100;
-        socketRef.current.emit('student-progress-update', {
-          progress,
-          timeRemaining: timeLeft
-        });
-      }
-    }, 1000);
-
     // Cleanup
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      clearInterval(progressInterval);
-      if (socketRef.current) {
-        socketRef.current.disconnect();
+      if (progressInterval.current) {
+        clearInterval(progressInterval.current);
       }
+      disconnectSocket();
     };
   }, [quizId, answers, timeLeft, quiz]);
 
+  // Fetch quiz data
   useEffect(() => {
     const fetchQuiz = async () => {
       try {
@@ -151,7 +163,6 @@ function QuizPage() {
         [currentQuestion]: answer
       }));
       
-      // Get the actual question ID from the quiz data
       const questionId = quiz.questions[currentQuestion].id;
       const response = await api.post(`/quiz/${quizId}/answer`, {
         questionId,
@@ -159,18 +170,16 @@ function QuizPage() {
         studentName: sessionStorage.getItem('studentName')
       });
 
-      // Update progress based on server response
-      if (response.data.progress) {
-        if (socketRef.current?.connected) {
-          socketRef.current.emit('student-progress-update', {
-            progress: response.data.progress,
-            timeRemaining: timeLeft
-          });
-        }
+      if (response.data.progress && socket.connected) {
+        socket.emit('student-progress-update', {
+          progress: response.data.progress,
+          timeRemaining: timeLeft
+        });
       }
 
     } catch (error) {
       console.error('Error saving answer:', error);
+      setConnectionError('Failed to save answer. Please try again.');
     }
   }, [currentQuestion, quizId, quiz, timeLeft]);
 
@@ -178,6 +187,11 @@ function QuizPage() {
 
   return (
     <Container className="py-4">
+      {connectionError && (
+        <Alert variant="danger" className="mb-3">
+          {connectionError}
+        </Alert>
+      )}
       <Card>
         <Card.Body>
           <ProgressBar 

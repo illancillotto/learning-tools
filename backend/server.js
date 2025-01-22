@@ -20,7 +20,12 @@ const server = http.createServer(app);
 const io = socketIO.init(server);
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.NODE_ENV === 'development' 
+    ? '*'  // Allow all origins in development
+    : process.env.FRONTEND_URL, // Use specific origin in production
+  credentials: true
+}));
 app.use(express.json());
 
 // Database connection
@@ -37,6 +42,6 @@ app.use('/api/quiz', quizRoutes);
 app.use('/api/student', studentRoutes);
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });
