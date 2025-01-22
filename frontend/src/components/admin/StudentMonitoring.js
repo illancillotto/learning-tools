@@ -207,11 +207,14 @@ function StudentMonitoring({ activeStudents }) {
                     {counterData ? (
                       <div className="d-flex align-items-center gap-2">
                         <Badge bg="primary">
-                          {t('student.monitoring.correctAnswers')}: {counterData.correctAnswers} / 10
+                          {t('student.monitoring.correctAnswers')}: {counterData.correctAnswers || 0} / {counterData.totalQuestions || 10}
                         </Badge>
                         <Badge bg="info">
-                          {t('student.monitoring.totalAnswers')}: {counterData.totalAnswers} / 10 {' '}
-                          {!isNaN(counterData.totalAnswers) ? `(${Math.round((counterData.totalAnswers / 10) * 100)}%)` : '(0%)'}
+                          {t('student.monitoring.totalAnswers')}: {counterData.totalAnswers || 0} / {counterData.totalQuestions || 10} {' '}
+                          {!isNaN(counterData.totalAnswers) ? 
+                            `(${Math.round(((counterData.totalAnswers || 0) / (counterData.totalQuestions || 10)) * 100)}%)` : 
+                            '(0%)'
+                          }
                         </Badge>
                       </div>
                     ) : (

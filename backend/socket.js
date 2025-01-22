@@ -85,15 +85,14 @@ module.exports = {
           // Get all in-progress submissions
           const submissions = await StudentSubmission.find({ 
             status: 'in-progress' 
-          }).select('studentName answers totalQuestions correctAnswers');
+          }).select('studentName answers totalQuestions');
 
           // Format the data for frontend
           const studentCounters = submissions.map(sub => ({
             studentName: sub.studentName,
-            correctAnswers: sub.correctAnswers,
-            totalQuestions: sub.totalQuestions,
-            answeredQuestions: sub.answers.length,
-            percentComplete: Math.round((sub.answers.length / sub.totalQuestions) * 100)
+            totalAnswers: sub.answers.length,
+            correctAnswers: sub.answers.filter(a => a.isCorrect).length,
+            totalQuestions: sub.totalQuestions || 10  // Fallback to 10 if not set
           }));
 
           socket.emit('studentCounters', studentCounters);
