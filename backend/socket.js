@@ -1,4 +1,5 @@
 const { Server } = require('socket.io');
+const StudentSubmission = require('./models/Student');
 
 let io;
 let activeStudents = new Map(); // Track active students
@@ -76,6 +77,28 @@ module.exports = {
             io.emit('activeStudents', Array.from(activeStudents.values()));
           }
           studentSockets.delete(socket.id);
+        }
+      });
+
+      socket.on('getStudentCounters', async () => {
+        try {
+          // Get all in-progress submissions
+          const submissions = await StudentSubmission.find({ 
+            status: 'in-progress' 
+          }).select('studentName answers totalQuestions correctAnswers');
+
+          // Format the data for frontend
+          const studentCounters = submissions.map(sub => ({
+            studentName: sub.studentName,
+            correctAnswers: sub.correctAnswers,
+            totalQuestions: sub.totalQuestions,
+            answeredQuestions: sub.answers.length,
+            percentComplete: Math.round((sub.answers.length / sub.totalQuestions) * 100)
+          }));
+
+          socket.emit('studentCounters', studentCounters);
+        } catch (error) {
+          console.error('Error fetching student counters:', error);
         }
       });
     });

@@ -6,6 +6,8 @@ import io from 'socket.io-client';
 function StudentMonitoring({ activeStudents }) {
   const { t } = useTranslation();
   const [connectedStudents, setConnectedStudents] = useState(activeStudents || []);
+  const [studentCounters, setStudentCounters] = useState(new Map());
+  const socketRef = useRef(null);
   const lastUpdateRef = useRef(new Map());
   const timerIntervalRef = useRef(null);
 
@@ -37,6 +39,8 @@ function StudentMonitoring({ activeStudents }) {
       reconnectionDelayMax: 5000,
       timeout: 20000
     });
+
+    socketRef.current = socket;
 
     socket.on('activeStudents', (students) => {
       console.log('Received students update:', students);
@@ -87,15 +91,31 @@ function StudentMonitoring({ activeStudents }) {
       });
     });
 
+    // Listen for counter updates
+    socket.on('studentCounters', (counters) => {
+      const counterMap = new Map(
+        counters.map(counter => [counter.studentName, counter])
+      );
+      setStudentCounters(counterMap);
+    });
+
     const pollInterval = setInterval(() => {
       if (socket.connected) {
         socket.emit('getActiveStudents');
       }
     }, 5000);
 
+    // Set up polling for counters
+    const counterInterval = setInterval(() => {
+      if (socket.connected) {
+        socket.emit('getStudentCounters');
+      }
+    }, 5000);
+
     return () => {
       lastUpdateRef.current.clear();
       clearInterval(pollInterval);
+      clearInterval(counterInterval);
       socket.disconnect();
     };
   }, []);
@@ -118,23 +138,33 @@ function StudentMonitoring({ activeStudents }) {
   };
 
   const calculateProgress = (student) => {
-    if (!student.submissions || !student.submissions.length) return 0;
+    if (!student.submissions || !student.submissions.length) return {
+      totalAnswered: 0,
+      correctAnswers: 0,
+      wrongAnswers: 0,
+      totalQuestions: 0
+    };
     
     const currentSubmission = student.submissions.find(
       sub => sub.quizId === student.currentQuiz
     );
     
-    if (!currentSubmission) return 0;
+    if (!currentSubmission) return {
+      totalAnswered: 0,
+      correctAnswers: 0,
+      wrongAnswers: 0,
+      totalQuestions: 0
+    };
 
-    const answeredQuestions = currentSubmission.answers.length;
-    const totalQuestions = currentSubmission.totalQuestions;
+    const totalAnswered = currentSubmission.answers.length;
     const correctAnswers = currentSubmission.answers.filter(a => a.isCorrect).length;
+    const wrongAnswers = totalAnswered - correctAnswers;
 
     return {
-      progress: Math.round((answeredQuestions / totalQuestions) * 100),
+      totalAnswered,
       correctAnswers,
-      totalAnswered: answeredQuestions,
-      totalQuestions
+      wrongAnswers,
+      totalQuestions: currentSubmission.totalQuestions
     };
   };
 
@@ -154,6 +184,7 @@ function StudentMonitoring({ activeStudents }) {
           </thead>
           <tbody>
             {connectedStudents.map((student, index) => {
+              const counterData = studentCounters.get(student.name);
               const progressStats = calculateProgress(student);
               
               return (
@@ -173,34 +204,18 @@ function StudentMonitoring({ activeStudents }) {
                   <td>{student.currentQuiz || 'N/A'}</td>
                   <td>{formatTime(student.timeRemaining)}</td>
                   <td>
-                    {progressStats.totalQuestions > 0 ? (
-                      <div>
-                        <div className="progress mb-2">
-                          <div
-                            className="progress-bar"
-                            role="progressbar"
-                            style={{ 
-                              width: `${progressStats.progress}%`,
-                              transition: 'all 0.5s ease',
-                              backgroundColor: '#007bff'
-                            }}
-                            aria-valuenow={progressStats.progress}
-                            aria-valuemin="0"
-                            aria-valuemax="100"
-                          >
-                            {progressStats.progress}%
-                          </div>
-                        </div>
-                        <small className="text-muted">
-                          {t('student.monitoring.answers', {
-                            correct: progressStats.correctAnswers,
-                            total: progressStats.totalAnswered,
-                            questions: progressStats.totalQuestions
-                          })}
-                        </small>
+                    {counterData ? (
+                      <div className="d-flex align-items-center gap-2">
+                        <Badge bg="primary">
+                          {t('student.monitoring.correctAnswers')}: {counterData.correctAnswers} / 10
+                        </Badge>
+                        <Badge bg="info">
+                          {t('student.monitoring.totalAnswers')}: {counterData.totalAnswers} / 10 {' '}
+                          {!isNaN(counterData.totalAnswers) ? `(${Math.round((counterData.totalAnswers / 10) * 100)}%)` : '(0%)'}
+                        </Badge>
                       </div>
                     ) : (
-                      'N/A'
+                      <Badge bg="secondary">0 / 10 (0%)</Badge>
                     )}
                   </td>
                 </tr>

@@ -94,7 +94,10 @@ const translations = {
           status: 'Status',
           currentQuiz: 'Current Quiz',
           timeRemaining: 'Time Remaining',
-          progress: 'Progress',
+          progress: 'Progresso',
+          totalAnswers: 'Total Answers',
+          correctAnswers: 'Correct Answers',
+          wrongAnswers: 'Wrong Answers',
           connected: 'Connected',
           disconnected: 'Disconnected'
         },
@@ -221,6 +224,9 @@ const translations = {
           currentQuiz: 'Quiz Attuale',
           timeRemaining: 'Tempo Rimanente',
           progress: 'Progresso',
+          totalAnswers: 'Risposte Totali',
+          correctAnswers: 'Risposte Corrette',
+          wrongAnswers: 'Risposte Errate',
           connected: 'Connesso',
           disconnected: 'Disconnesso'
         },
