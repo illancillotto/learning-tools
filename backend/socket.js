@@ -1,5 +1,24 @@
 const { Server } = require('socket.io');
 const StudentSubmission = require('./models/Student');
+const os = require('os');
+
+// Get server IP address
+function getServerIP() {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const interface of interfaces[name]) {
+      // Skip internal and non-IPv4 addresses
+      if (interface.family === 'IPv4' && !interface.internal) {
+        return interface.address;
+      }
+    }
+  }
+  return 'localhost'; // Fallback to localhost
+}
+
+// Add this before module.exports
+const SERVER_IP = getServerIP();
+console.log('Server running on IP:', SERVER_IP);
 
 let io;
 let activeStudents = new Map(); // Track active students

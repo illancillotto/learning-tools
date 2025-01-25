@@ -1,7 +1,14 @@
 import axios from 'axios';
 
+// Get the backend URL from environment or socket configuration
+const getBackendURL = () => {
+  const backendPort = process.env.REACT_APP_BACKEND_PORT || '5000';
+  const backendHost = window.location.hostname;
+  return `http://${backendHost}:${backendPort}/api`;
+};
+
 const api = axios.create({
-  baseURL: `${process.env.REACT_APP_API_URL}/api`,
+  baseURL: getBackendURL(),
   headers: {
     'Content-Type': 'application/json'
   }
