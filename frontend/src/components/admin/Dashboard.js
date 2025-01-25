@@ -198,16 +198,34 @@ function Dashboard() {
 
   const handleViewQuestionDetails = async (submission) => {
     try {
-      // Fetch the quiz details if needed
-      const quizResponse = await api.get(`/quiz/${submission.quizId}`);
+      console.log('Submission data:', submission);
+
+      // Get the quiz details from the parent component
+      const quiz = quizzes.find(q => {
+        const submissionAnswers = submission.answers || [];
+        return submissionAnswers.some(answer => 
+          q.questions.some(question => question._id === answer.questionId)
+        );
+      });
+
+      if (!quiz) {
+        console.error('Quiz not found for submission:', submission);
+        alert(t('quiz.submissions.errorFetchingDetails'));
+        return;
+      }
+
       setSelectedSubmissionDetails({
         ...submission,
-        quizTitle: quizResponse.data.title,
-        questions: quizResponse.data.questions
+        quizTitle: quiz.title,
+        questions: quiz.questions,
+        studentName: submission.studentName,
+        answers: submission.answers || []
       });
       setShowQuestionDetailsModal(true);
+
     } catch (error) {
-      console.error('Error fetching submission details:', error);
+      console.error('Error processing submission details:', error);
+      alert(t('quiz.submissions.errorFetchingDetails'));
     }
   };
 
@@ -591,28 +609,28 @@ function Dashboard() {
       >
         <Modal.Header closeButton>
           <Modal.Title>
-            {selectedSubmissionDetails?.quizTitle} - {selectedSubmissionDetails?.studentName}
+            {selectedSubmissionDetails?.quizTitle || 'Quiz'} - {selectedSubmissionDetails?.studentName}
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {selectedSubmissionDetails?.answers.map((answer, index) => {
-            const question = selectedSubmissionDetails.questions.find(q => q._id === answer.questionId);
+            const question = selectedSubmissionDetails.questions?.find(q => q._id === answer.questionId);
             return (
               <Card key={index} className="mb-3">
                 <Card.Header>
-                  <strong>Domanda {index + 1}</strong>
+                  <strong>{t('quiz.submissions.questionDetails.questionNumber', { number: index + 1 })}</strong>
                 </Card.Header>
                 <Card.Body>
                   <p>{question?.text}</p>
                   <div className="mt-2">
-                    <strong>Risposta dello studente:</strong>
+                    <strong>{t('quiz.submissions.questionDetails.studentAnswer')}:</strong>
                     <p className={`mt-1 p-2 rounded ${answer.isCorrect ? 'bg-success-light text-success' : 'bg-danger-light text-danger'}`}>
                       {answer.answer}
                     </p>
                   </div>
                   {!answer.isCorrect && question?.correctAnswer && (
                     <div className="mt-2">
-                      <strong>Risposta corretta:</strong>
+                      <strong>{t('quiz.submissions.questionDetails.correctAnswer')}:</strong>
                       <p className="mt-1 p-2 rounded bg-success-light text-success">
                         {question.correctAnswer}
                       </p>

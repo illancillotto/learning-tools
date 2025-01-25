@@ -96,7 +96,8 @@ const translations = {
             correct: 'Correct',
             incorrect: 'Incorrect'
           },
-          actions: 'Actions'
+          actions: 'Actions',
+          errorFetchingDetails: 'Error loading submission details. Please try again.'
         }
       },
       student: {
@@ -242,7 +243,8 @@ const translations = {
             correct: 'Corretta',
             incorrect: 'Errata'
           },
-          actions: 'Azioni'
+          actions: 'Azioni',
+          errorFetchingDetails: 'Errore nel caricamento dei dettagli. Riprova.'
         }
       },
       student: {
