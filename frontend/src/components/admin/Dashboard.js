@@ -25,6 +25,8 @@ function Dashboard() {
   const [submissions, setSubmissions] = useState({});
   const [showSubmissionsModal, setShowSubmissionsModal] = useState(false);
   const [selectedQuizSubmissions, setSelectedQuizSubmissions] = useState(null);
+  const [showQuestionDetailsModal, setShowQuestionDetailsModal] = useState(false);
+  const [selectedSubmissionDetails, setSelectedSubmissionDetails] = useState(null);
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -180,8 +182,33 @@ function Dashboard() {
   };
 
   const handleShowSubmissions = (quizId) => {
-    setSelectedQuizSubmissions(submissions[quizId]);
+    console.log('Raw submissions:', submissions[quizId]); // Debug log
+    setSelectedQuizSubmissions(submissions[quizId]?.map(submission => {
+      const correctAnswers = submission.answers?.filter(a => a.isCorrect)?.length || 0;
+      const totalAnswers = submission.answers?.length || 0;
+      return {
+        ...submission,
+        correctAnswers,
+        totalAnswers,
+        score: totalAnswers > 0 ? (correctAnswers / totalAnswers) : 0
+      };
+    }));
     setShowSubmissionsModal(true);
+  };
+
+  const handleViewQuestionDetails = async (submission) => {
+    try {
+      // Fetch the quiz details if needed
+      const quizResponse = await api.get(`/quiz/${submission.quizId}`);
+      setSelectedSubmissionDetails({
+        ...submission,
+        quizTitle: quizResponse.data.title,
+        questions: quizResponse.data.questions
+      });
+      setShowQuestionDetailsModal(true);
+    } catch (error) {
+      console.error('Error fetching submission details:', error);
+    }
   };
 
   return (
@@ -504,22 +531,42 @@ function Dashboard() {
                   <th>{t('quiz.submissions.studentName')}</th>
                   <th>{t('quiz.submissions.startTime')}</th>
                   <th>{t('quiz.submissions.score')}</th>
-                  <th>{t('quiz.management.timeLimit')}</th>
+                  <th>{t('quiz.submissions.timeSpent')}</th>
+                  <th>{t('quiz.submissions.actions')}</th>
                 </tr>
               </thead>
               <tbody>
                 {selectedQuizSubmissions.map((submission, index) => (
                   <tr key={index}>
                     <td>{submission.studentName}</td>
-                    <td>{new Date(submission.submittedAt).toLocaleDateString('it-IT', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}</td>
-                    <td>{submission.score}/{submission.totalQuestions}</td>
-                    <td>{submission.timeSpent} {t('quiz.management.minutes')}</td>
+                    <td>{submission.startTime ? new Date(submission.startTime).toLocaleString('it-IT') : 'N/A'}</td>
+                    <td>
+                      <Badge bg={
+                        submission.correctAnswers > 0 ? 
+                        (submission.correctAnswers / submission.totalAnswers >= 0.6 ? 'success' : 'danger') : 
+                        'secondary'
+                      }>
+                        {submission.answers?.length > 0 ? 
+                          `${submission.answers.filter(a => a.isCorrect).length}/${submission.answers.length} ` +
+                          `(${Math.round((submission.answers.filter(a => a.isCorrect).length / submission.answers.length) * 100)}%)` :
+                          '0/0 (0%)'
+                        }
+                      </Badge>
+                    </td>
+                    <td>
+                      {submission.startTime && submission.endTime ? 
+                        `${Math.round((new Date(submission.endTime) - new Date(submission.startTime)) / 60000)} min` : 
+                        'N/A'}
+                    </td>
+                    <td>
+                      <Button
+                        variant="link"
+                        size="sm"
+                        onClick={() => handleViewQuestionDetails(submission)}
+                      >
+                        <i className="bi bi-eye"></i> {t('quiz.submissions.viewDetails')}
+                      </Button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -530,6 +577,54 @@ function Dashboard() {
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowSubmissionsModal(false)}>
+            {t('common.close')}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Add new modal for question details */}
+      <Modal
+        show={showQuestionDetailsModal}
+        onHide={() => setShowQuestionDetailsModal(false)}
+        size="lg"
+        scrollable
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>
+            {selectedSubmissionDetails?.quizTitle} - {selectedSubmissionDetails?.studentName}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedSubmissionDetails?.answers.map((answer, index) => {
+            const question = selectedSubmissionDetails.questions.find(q => q._id === answer.questionId);
+            return (
+              <Card key={index} className="mb-3">
+                <Card.Header>
+                  <strong>Domanda {index + 1}</strong>
+                </Card.Header>
+                <Card.Body>
+                  <p>{question?.text}</p>
+                  <div className="mt-2">
+                    <strong>Risposta dello studente:</strong>
+                    <p className={`mt-1 p-2 rounded ${answer.isCorrect ? 'bg-success-light text-success' : 'bg-danger-light text-danger'}`}>
+                      {answer.answer}
+                    </p>
+                  </div>
+                  {!answer.isCorrect && question?.correctAnswer && (
+                    <div className="mt-2">
+                      <strong>Risposta corretta:</strong>
+                      <p className="mt-1 p-2 rounded bg-success-light text-success">
+                        {question.correctAnswer}
+                      </p>
+                    </div>
+                  )}
+                </Card.Body>
+              </Card>
+            );
+          })}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowQuestionDetailsModal(false)}>
             {t('common.close')}
           </Button>
         </Modal.Footer>

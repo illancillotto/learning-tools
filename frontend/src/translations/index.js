@@ -82,9 +82,21 @@ const translations = {
           status: 'Status',
           startTime: 'Start Time',
           endTime: 'End Time',
-          answeredQuestions: 'Answered Questions',
           score: 'Score',
-          noSubmissions: 'No submissions yet'
+          timeSpent: 'Time Spent',
+          noSubmissions: 'No submissions yet',
+          viewDetails: 'View Details',
+          questionDetails: {
+            title: 'Submission Details',
+            questionNumber: 'Question {number}',
+            studentAnswer: 'Student Answer',
+            correctAnswer: 'Correct Answer',
+            question: 'Question',
+            result: 'Result',
+            correct: 'Correct',
+            incorrect: 'Incorrect'
+          },
+          actions: 'Actions'
         }
       },
       student: {
@@ -216,9 +228,21 @@ const translations = {
           status: 'Stato',
           startTime: 'Ora Inizio',
           endTime: 'Ora Fine',
-          answeredQuestions: 'Domande Risposte',
           score: 'Punteggio',
-          noSubmissions: 'Nessuna consegna'
+          timeSpent: 'Tempo Impiegato',
+          noSubmissions: 'Nessuna consegna',
+          viewDetails: 'Visualizza Dettagli',
+          questionDetails: {
+            title: 'Dettagli Consegna',
+            questionNumber: 'Domanda {number}',
+            studentAnswer: 'Risposta Studente',
+            correctAnswer: 'Risposta Corretta',
+            question: 'Domanda',
+            result: 'Risultato',
+            correct: 'Corretta',
+            incorrect: 'Errata'
+          },
+          actions: 'Azioni'
         }
       },
       student: {
