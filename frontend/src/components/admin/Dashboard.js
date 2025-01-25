@@ -30,6 +30,38 @@ function Dashboard() {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
+  const modalStyles = {
+    '.submissions-modal .modal-content': {
+      borderRadius: '12px',
+      overflow: 'hidden'
+    },
+    '.submissions-modal .table': {
+      marginBottom: 0
+    },
+    '.submissions-modal .table th': {
+      fontWeight: 600,
+      borderTop: 'none'
+    },
+    '.submissions-modal .score-badge': {
+      fontWeight: 500,
+      padding: '6px 10px',
+      borderRadius: '6px'
+    },
+    '.submissions-modal .score-percentage': {
+      opacity: 0.8,
+      fontSize: '0.9em'
+    },
+    '.submissions-modal .btn-link': {
+      color: '#666'
+    },
+    '.submissions-modal .btn-link:hover': {
+      color: '#333'
+    },
+    '.submissions-modal .table-hover tbody tr:hover': {
+      backgroundColor: 'rgba(0,0,0,0.02)'
+    }
+  };
+
   useEffect(() => {
     socket.connect();
     
@@ -66,6 +98,20 @@ function Dashboard() {
     fetchQuizzes();
     
     return () => socket.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = Object.entries(modalStyles)
+      .map(([selector, rules]) => 
+        `${selector} { ${Object.entries(rules)
+          .map(([property, value]) => 
+            `${property.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}: ${value}`
+          ).join('; ')} 
+      }`
+      ).join('\n');
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
   }, []);
 
   const fetchQuizzes = async () => {
@@ -229,6 +275,14 @@ function Dashboard() {
     }
   };
 
+  const getScoreBadgeColor = (correct, total) => {
+    if (!total) return 'secondary';
+    const percentage = (correct / total) * 100;
+    if (percentage >= 80) return 'success';
+    if (percentage >= 60) return 'warning';
+    return 'danger';
+  };
+
   return (
     <Container fluid className="p-0">
       {/* Mobile Header */}
@@ -324,24 +378,17 @@ function Dashboard() {
         <Nav className="flex-column">
           <Nav.Link 
             as={Link} 
-            to="/admin/elenco-quiz"
-            className="text-primary"
-          >
-            Elenco Quiz
-          </Nav.Link>
-          <Nav.Link 
-            as={Link} 
             to="/admin/gestione-quiz"
             className="text-primary"
           >
-            Gestione Quiz
+            {t('dashboard.navigation.quizManagement')}
           </Nav.Link>
           <Nav.Link 
             as={Link} 
             to="/admin/monitoraggio-studenti"
             className="text-primary"
           >
-            Monitoraggio Studenti
+            {t('dashboard.navigation.studentMonitoring')}
           </Nav.Link>
         </Nav>
       </div>
@@ -360,15 +407,7 @@ function Dashboard() {
                 className={activeTab === 'gestione-quiz' ? 'active' : ''}
                 onClick={() => setActiveTab('gestione-quiz')}
               >
-                Gestione Quiz
-              </Nav.Link>
-              <Nav.Link 
-                as={Link} 
-                to="/admin/elenco-quiz"
-                className={activeTab === 'elenco-quiz' ? 'active' : ''}
-                onClick={() => setActiveTab('elenco-quiz')}
-              >
-                Elenco Quiz
+                {t('dashboard.navigation.quizManagement')}
               </Nav.Link>
               <Nav.Link 
                 as={Link}
@@ -376,7 +415,7 @@ function Dashboard() {
                 className={activeTab === 'monitoring' ? 'active' : ''}
                 onClick={() => setActiveTab('monitoring')}
               >
-                Monitoraggio Studenti
+                {t('dashboard.navigation.studentMonitoring')}
               </Nav.Link>
             </Nav>
 
@@ -506,19 +545,6 @@ function Dashboard() {
 
           {/* Routes Content */}
           <Routes>
-            <Route 
-              path="/elenco-quiz" 
-              element={
-                <QuizList 
-                  quizzes={quizzes}
-                  submissions={submissions}
-                  onActivate={handleQuizActivation}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                  onShowSubmissions={handleShowSubmissions}
-                />
-              } 
-            />
             <Route path="/gestione-quiz" element={<QuizManagement 
               quizzes={quizzes} 
               onQuizUpdate={fetchQuizzes} 
@@ -537,52 +563,76 @@ function Dashboard() {
         show={showSubmissionsModal} 
         onHide={() => setShowSubmissionsModal(false)}
         size="lg"
+        className="submissions-modal"
       >
         <Modal.Header closeButton>
-          <Modal.Title>{t('quiz.submissions.title')}</Modal.Title>
+          <Modal.Title className="fs-5">
+            <i className="bi bi-file-text me-2"></i>
+            {t('quiz.submissions.title')}
+          </Modal.Title>
         </Modal.Header>
-        <Modal.Body>
+        <Modal.Body className="p-0">
           {selectedQuizSubmissions && selectedQuizSubmissions.length > 0 ? (
-            <Table responsive>
+            <Table responsive hover>
               <thead>
                 <tr>
                   <th>{t('quiz.submissions.studentName')}</th>
                   <th>{t('quiz.submissions.startTime')}</th>
                   <th>{t('quiz.submissions.score')}</th>
                   <th>{t('quiz.submissions.timeSpent')}</th>
-                  <th>{t('quiz.submissions.actions')}</th>
+                  <th className="text-end">{t('quiz.submissions.actions')}</th>
                 </tr>
               </thead>
               <tbody>
                 {selectedQuizSubmissions.map((submission, index) => (
                   <tr key={index}>
-                    <td>{submission.studentName}</td>
-                    <td>{submission.startTime ? new Date(submission.startTime).toLocaleString('it-IT') : 'N/A'}</td>
                     <td>
-                      <Badge bg={
-                        submission.correctAnswers > 0 ? 
-                        (submission.correctAnswers / submission.totalAnswers >= 0.6 ? 'success' : 'danger') : 
-                        'secondary'
-                      }>
-                        {submission.answers?.length > 0 ? 
-                          `${submission.answers.filter(a => a.isCorrect).length}/${submission.answers.length} ` +
-                          `(${Math.round((submission.answers.filter(a => a.isCorrect).length / submission.answers.length) * 100)}%)` :
-                          '0/0 (0%)'
-                        }
+                      <div className="d-flex align-items-center">
+                        <i className="bi bi-person-circle text-primary me-2"></i>
+                        <span className="student-name">{submission.studentName}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <span className="time-info">
+                        {submission.startTime ? 
+                          new Date(submission.startTime).toLocaleString('it-IT', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          }) : 'N/A'}
+                      </span>
+                    </td>
+                    <td>
+                      <Badge 
+                        bg={getScoreBadgeColor(submission.correctAnswers, submission.totalAnswers)}
+                        className="score-badge"
+                      >
+                        {`${submission.correctAnswers}/${submission.totalAnswers}`}
+                        <span className="score-percentage">
+                          ({Math.round((submission.correctAnswers / submission.totalAnswers) * 100)}%)
+                        </span>
                       </Badge>
                     </td>
                     <td>
-                      {submission.startTime && submission.endTime ? 
-                        `${Math.round((new Date(submission.endTime) - new Date(submission.startTime)) / 60000)} min` : 
-                        'N/A'}
+                      <span className="time-info">
+                        {submission.startTime && submission.endTime ? (
+                          <>
+                            <i className="bi bi-clock me-1"></i>
+                            {Math.round((new Date(submission.endTime) - new Date(submission.startTime)) / 60000)} min
+                          </>
+                        ) : 'N/A'}
+                      </span>
                     </td>
-                    <td>
+                    <td className="text-end">
                       <Button
                         variant="link"
                         size="sm"
                         onClick={() => handleViewQuestionDetails(submission)}
                       >
-                        <i className="bi bi-eye"></i> {t('quiz.submissions.viewDetails')}
+                        <i className="bi bi-eye me-1"></i>
+                        {t('quiz.submissions.viewDetails')}
                       </Button>
                     </td>
                   </tr>
@@ -590,14 +640,12 @@ function Dashboard() {
               </tbody>
             </Table>
           ) : (
-            <p className="text-center py-3">{t('quiz.submissions.noSubmissions')}</p>
+            <div className="empty-state">
+              <i className="bi bi-inbox"></i>
+              <p>{t('quiz.submissions.noSubmissions')}</p>
+            </div>
           )}
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowSubmissionsModal(false)}>
-            {t('common.close')}
-          </Button>
-        </Modal.Footer>
       </Modal>
 
       {/* Add new modal for question details */}
@@ -648,98 +696,6 @@ function Dashboard() {
         </Modal.Footer>
       </Modal>
     </Container>
-  );
-}
-
-// Update QuizList to receive handler functions as props
-function QuizList({ quizzes, submissions, onActivate, onEdit, onDelete, onShowSubmissions }) {
-  const { t } = useTranslation();
-
-  // Filter quizzes to show only non-active ones
-  const savedQuizzes = quizzes.filter(quiz => quiz.status !== 'active');
-
-  return (
-    <Card className="mb-4">
-      <Card.Header className="bg-light">
-        <h5 className="mb-0">{t('quiz.management.title')}</h5>
-      </Card.Header>
-      <Card.Body>
-        {savedQuizzes.length === 0 ? (
-          <div className="text-center py-4">
-            <p>Nessun quiz completato</p>
-          </div>
-        ) : (
-          <Table responsive hover>
-            <thead>
-              <tr>
-                <th>Gestione Quiz</th>
-                <th>Limite di Tempo</th>
-                <th>Domande</th>
-                <th>Domande per Studente</th>
-                <th>Stato</th>
-                <th>Consegne</th>
-                <th className="text-end">Azioni</th>
-              </tr>
-            </thead>
-            <tbody>
-              {savedQuizzes.map(quiz => (
-                <tr key={quiz._id}>
-                  <td>{quiz.title}</td>
-                  <td>{quiz.timeLimit} minuti</td>
-                  <td>{quiz.questions.length} domande</td>
-                  <td>{quiz.questionCount} domande</td>
-                  <td>
-                    <Badge bg="secondary">
-                      Completato
-                    </Badge>
-                  </td>
-                  <td>
-                    <Button 
-                      variant="link"
-                      className="text-decoration-none d-inline-flex align-items-center gap-2"
-                      onClick={() => onShowSubmissions(quiz._id)}
-                    >
-                      <div className="d-flex align-items-center">
-                        <i className="bi bi-file-text me-2"></i>
-                        <span className="badge rounded-pill bg-info text-white">
-                          {(submissions[quiz._id]?.length || 0)}
-                        </span>
-                      </div>
-                      {t('quiz.management.submissionCount')}
-                    </Button>
-                  </td>
-                  <td>
-                    <div className="d-flex gap-2 justify-content-end">
-                      <Button
-                        variant="success"
-                        size="sm"
-                        onClick={() => onActivate(quiz._id, true)}
-                      >
-                        Attiva Quiz
-                      </Button>
-                      <Button 
-                        variant="outline-primary"
-                        size="sm"
-                        onClick={() => onEdit(quiz)}
-                      >
-                        Modifica
-                      </Button>
-                      <Button 
-                        variant="outline-danger"
-                        size="sm"
-                        onClick={() => onDelete(quiz._id)}
-                      >
-                        Elimina
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        )}
-      </Card.Body>
-    </Card>
   );
 }
 

@@ -1,0 +1,113 @@
+.submissions-modal .modal-content {
+    border-radius: 12px;
+    overflow: hidden;
+    border: none;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+  }
+  
+  .submissions-modal .modal-header {
+    background-color: #f8f9ff;
+    border-bottom: 1px solid #e7eaf4;
+  }
+  
+  .submissions-modal .modal-title i {
+    color: #0d6efd;
+  }
+  
+  .submissions-modal .table {
+    margin-bottom: 0;
+  }
+  
+  .submissions-modal .table thead {
+    background-color: #f8f9ff;
+  }
+  
+  .submissions-modal .table th {
+    font-weight: 600;
+    border-top: none;
+    color: #2c3e50;
+    padding: 1rem 1.5rem;
+  }
+  
+  .submissions-modal .table td {
+    padding: 1rem 1.5rem;
+    border-color: #e7eaf4;
+  }
+  
+  .submissions-modal .score-badge {
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 6px;
+  }
+  
+  .submissions-modal .score-badge.bg-success {
+    background-color: #e7f4ff !important;
+    color: #0d6efd;
+  }
+  
+  .submissions-modal .score-badge.bg-warning {
+    background-color: #fff4e6 !important;
+    color: #fd7e14;
+  }
+  
+  .submissions-modal .score-badge.bg-danger {
+    background-color: #ffe7e7 !important;
+    color: #dc3545;
+  }
+  
+  .submissions-modal .score-badge.bg-secondary {
+    background-color: #f0f2f5 !important;
+    color: #6c757d;
+  }
+  
+  .submissions-modal .score-percentage {
+    opacity: 0.8;
+    font-size: 0.9em;
+  }
+  
+  .submissions-modal .btn-link {
+    color: #0d6efd;
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+  }
+  
+  .submissions-modal .btn-link:hover {
+    background-color: #f0f4ff;
+    color: #0a58ca;
+  }
+  
+  .submissions-modal .table-hover tbody tr:hover {
+    background-color: #f8f9ff;
+  }
+  
+  .submissions-modal .student-name {
+    color: #2c3e50;
+    font-weight: 500;
+  }
+  
+  .submissions-modal .time-info {
+    color: #6c757d;
+    font-size: 0.9em;
+  }
+  
+  .submissions-modal .time-info i {
+    color: #0d6efd;
+  }
+  
+  .submissions-modal .empty-state {
+    padding: 3rem;
+    text-align: center;
+  }
+  
+  .submissions-modal .empty-state i {
+    font-size: 3rem;
+    color: #0d6efd;
+    opacity: 0.5;
+  }
+  
+  .submissions-modal .empty-state p {
+    color: #6c757d;
+    margin-top: 1rem;
+  }

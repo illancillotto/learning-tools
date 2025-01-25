@@ -7,8 +7,7 @@ const translations = {
         exportResults: 'Export Results',
         navigation: {
           quizManagement: 'Quiz Management',
-          studentMonitoring: 'Student Monitoring',
-          submissions: 'Submissions'
+          studentMonitoring: 'Student Monitoring'
         },
         stats: {
           activeStudents: 'Active Students',
@@ -158,8 +157,7 @@ const translations = {
         exportResults: 'Esporta Risultati',
         navigation: {
           quizManagement: 'Gestione Quiz',
-          studentMonitoring: 'Monitoraggio Studenti',
-          submissions: 'Consegne'
+          studentMonitoring: 'Monitoraggio Studenti'
         },
         stats: {
           activeStudents: 'Studenti Attivi',
