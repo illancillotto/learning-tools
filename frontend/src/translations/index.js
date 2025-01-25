@@ -99,7 +99,12 @@ const translations = {
           correctAnswers: 'Correct Answers',
           wrongAnswers: 'Wrong Answers',
           connected: 'Connected',
-          disconnected: 'Disconnected'
+          disconnected: 'Disconnected',
+          activity: "Activity",
+          fully_active: "Active",
+          tab_switched: "Tab Switched",
+          window_inactive: "Window Inactive",
+          disconnected: "Disconnected"
         },
         quiz: {
           previous: 'Previous',
@@ -228,7 +233,12 @@ const translations = {
           correctAnswers: 'Risposte Corrette',
           wrongAnswers: 'Risposte Errate',
           connected: 'Connesso',
-          disconnected: 'Disconnesso'
+          disconnected: 'Disconnesso',
+          activity: "Attività",
+          fully_active: "Attivo",
+          tab_switched: "Tab Cambiata",
+          window_inactive: "Finestra Inattiva",
+          disconnected: "Disconnesso"
         },
         quiz: {
           previous: 'Precedente',

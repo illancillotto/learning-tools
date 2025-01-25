@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Card, Form, Button, ProgressBar, Alert } from 'react-bootstrap';
 import api from '../../services/api';
 import socket, { connectSocket, disconnectSocket } from '../../services/socket';
+import io from 'socket.io-client';
 
 function QuizPage() {
   const [quiz, setQuiz] = useState(null);
@@ -13,6 +14,8 @@ function QuizPage() {
   const { quizId } = useParams();
   const navigate = useNavigate();
   const progressInterval = useRef(null);
+  const [isPageActive, setIsPageActive] = useState(true);
+  const [isBrowserActive, setIsBrowserActive] = useState(true);
   
   const handleSubmitQuiz = useCallback(async () => {
     try {
@@ -48,7 +51,7 @@ function QuizPage() {
       });
 
       socket.on('connect_error', (error) => {
-        console.error('Socket connection error:', error);
+        console.log('Socket connection error:', error);
         setConnectionError('Connection lost. Attempting to reconnect...');
       });
 
@@ -56,48 +59,117 @@ function QuizPage() {
         console.log('Join acknowledged:', data);
       });
 
+      // Update server about student activity status
+      const emitActivityStatus = () => {
+        if (socket.connected) {
+          socket.emit('student-activity-status', {
+            studentName: sessionStorage.getItem('studentName'),
+            quizId,
+            isPageActive,
+            isBrowserActive,
+            timestamp: Date.now()
+          });
+        }
+      };
+
+      // Handle visibility change
+      const handleVisibilityChange = () => {
+        const isVisible = document.visibilityState === 'visible';
+        setIsPageActive(isVisible);
+        
+        if (!isVisible) {
+          socket.emit('student-attempted-leave', {
+            studentName: sessionStorage.getItem('studentName'),
+            quizId,
+            reason: 'tab_switch',
+            timestamp: Date.now()
+          });
+        }
+        
+        emitActivityStatus();
+      };
+
+      // Handle window focus/blur
+      const handleWindowFocus = () => {
+        setIsBrowserActive(true);
+        emitActivityStatus();
+      };
+
+      const handleWindowBlur = () => {
+        setIsBrowserActive(false);
+        socket.emit('student-attempted-leave', {
+          studentName: sessionStorage.getItem('studentName'),
+          quizId,
+          reason: 'window_blur',
+          timestamp: Date.now()
+        });
+        emitActivityStatus();
+      };
+
+      // Set up event listeners
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      window.addEventListener('focus', handleWindowFocus);
+      window.addEventListener('blur', handleWindowBlur);
+
+      // Initial status check
+      setIsPageActive(document.visibilityState === 'visible');
+      setIsBrowserActive(document.hasFocus());
+      emitActivityStatus();
+
       // Start progress updates after connection
       progressInterval.current = setInterval(() => {
         if (socket.connected && quiz) {
           const progress = (Object.keys(answers).length / quiz.questions.length) * 100;
           socket.emit('student-progress-update', {
             progress,
-            timeRemaining: timeLeft
+            timeRemaining: timeLeft,
+            isPageActive,
+            isBrowserActive
           });
         }
-      }, 2000); // Update every 2 seconds
+      }, 2000);
+
+      // Return cleanup function with references to the handlers
+      return {
+        handleVisibilityChange,
+        handleWindowFocus,
+        handleWindowBlur
+      };
     };
 
-    setupSocket();
+    // Store the handlers returned from setupSocket
+    const handlers = setupSocket();
 
     // Prevent leaving the page
     const handleBeforeUnload = (e) => {
       e.preventDefault();
       e.returnValue = '';
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
+      
+      if (socket.connected) {
         socket.emit('student-attempted-leave', {
           studentName: sessionStorage.getItem('studentName'),
-          quizId
+          quizId,
+          reason: 'page_close',
+          timestamp: Date.now()
         });
       }
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Cleanup
+    // Cleanup using the stored handlers
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener('visibilitychange', handlers.handleVisibilityChange);
+      window.removeEventListener('focus', handlers.handleWindowFocus);
+      window.removeEventListener('blur', handlers.handleWindowBlur);
+      
       if (progressInterval.current) {
         clearInterval(progressInterval.current);
       }
       disconnectSocket();
     };
-  }, [quizId, answers, timeLeft, quiz]);
+  }, [quizId, answers, timeLeft, quiz, isPageActive, isBrowserActive]);
 
   // Fetch quiz data
   useEffect(() => {
@@ -187,6 +259,11 @@ function QuizPage() {
 
   return (
     <Container className="py-4">
+      {(!isPageActive || !isBrowserActive) && (
+        <Alert variant="warning" className="mb-3">
+          Warning: Please keep this quiz window active and in focus!
+        </Alert>
+      )}
       {connectionError && (
         <Alert variant="danger" className="mb-3">
           {connectionError}

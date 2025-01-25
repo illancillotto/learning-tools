@@ -31,7 +31,7 @@ function StudentMonitoring({ activeStudents }) {
 
   useEffect(() => {
     const socket = io(process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000', {
-      transports: ['polling'],
+      transports: ['websocket', 'polling'],
       polling: { interval: 1000 },
       reconnection: true,
       reconnectionAttempts: Infinity,
@@ -41,6 +41,16 @@ function StudentMonitoring({ activeStudents }) {
     });
 
     socketRef.current = socket;
+
+    socket.on('connect', () => {
+      console.log('Socket connected');
+      socket.emit('getActiveStudents');
+      socket.emit('getStudentCounters');
+    });
+
+    socket.on('disconnect', () => {
+      console.log('Socket disconnected');
+    });
 
     socket.on('activeStudents', (students) => {
       console.log('Received students update:', students);
@@ -57,25 +67,19 @@ function StudentMonitoring({ activeStudents }) {
             lastUpdateRef.current.set(newStudent.id, now);
             return {
               ...newStudent,
-              timeRemaining: newStudent.timeRemaining || 30 * 60 // Convert to seconds if not set
+              timeRemaining: newStudent.timeRemaining || 30 * 60,
+              status: socket.connected ? 'connected' : 'disconnected'
             };
           }
 
-          // Handle status changes with debounce
-          let status = newStudent.status;
-          if (newStudent.status !== existingStudent.status) {
-            const lastUpdate = lastUpdateRef.current.get(newStudent.id) || 0;
-            if (now - lastUpdate < 5000) {
-              status = existingStudent.status;
-            } else {
-              lastUpdateRef.current.set(newStudent.id, now);
-            }
+          let status = socket.connected ? newStudent.status : 'disconnected';
+          const lastUpdate = lastUpdateRef.current.get(newStudent.id) || 0;
+          if (now - lastUpdate >= 5000) {
+            lastUpdateRef.current.set(newStudent.id, now);
           }
 
-          // Handle time changes
           let timeRemaining = existingStudent.timeRemaining;
           if (existingStudent.currentQuiz !== newStudent.currentQuiz) {
-            // Only reset time if quiz changed
             timeRemaining = newStudent.timeRemaining || 30 * 60;
           }
 
@@ -91,7 +95,6 @@ function StudentMonitoring({ activeStudents }) {
       });
     });
 
-    // Listen for counter updates
     socket.on('studentCounters', (counters) => {
       const counterMap = new Map(
         counters.map(counter => [counter.studentName, counter])
@@ -105,7 +108,6 @@ function StudentMonitoring({ activeStudents }) {
       }
     }, 5000);
 
-    // Set up polling for counters
     const counterInterval = setInterval(() => {
       if (socket.connected) {
         socket.emit('getStudentCounters');
@@ -168,6 +170,17 @@ function StudentMonitoring({ activeStudents }) {
     };
   };
 
+  const getActivityStatus = (student) => {
+    // If student is disconnected, don't show activity status
+    if (student.status === 'disconnected') {
+      return 'disconnected';
+    }
+    
+    if (!student.isPageActive) return 'tab_switched';
+    if (!student.isBrowserActive) return 'window_inactive';
+    return 'fully_active';
+  };
+
   return (
     <Card>
       <Card.Body>
@@ -177,6 +190,7 @@ function StudentMonitoring({ activeStudents }) {
             <tr>
               <th>{t('student.monitoring.name')}</th>
               <th>{t('student.monitoring.status')}</th>
+              <th>{t('student.monitoring.activity')}</th>
               <th>{t('student.monitoring.currentQuiz')}</th>
               <th>{t('student.monitoring.timeRemaining')}</th>
               <th>{t('student.monitoring.progress')}</th>
@@ -200,6 +214,31 @@ function StudentMonitoring({ activeStudents }) {
                     >
                       {t(`student.monitoring.${student.status}`)}
                     </Badge>
+                  </td>
+                  <td>
+                    {student.status === 'connected' ? (
+                      <Badge 
+                        bg={
+                          student.isPageActive && student.isBrowserActive ? 'success' : 
+                          !student.isPageActive ? 'warning' : 'danger'
+                        }
+                        style={{ transition: 'all 0.5s ease' }}
+                      >
+                        {student.isPageActive && student.isBrowserActive ? 
+                          t('student.monitoring.fully_active') :
+                          !student.isPageActive ? 
+                            t('student.monitoring.tab_switched') :
+                            t('student.monitoring.window_inactive')
+                        }
+                      </Badge>
+                    ) : (
+                      <Badge 
+                        bg="secondary"
+                        style={{ transition: 'all 0.5s ease' }}
+                      >
+                        {t('student.monitoring.disconnected')}
+                      </Badge>
+                    )}
                   </td>
                   <td>{student.currentQuiz || 'N/A'}</td>
                   <td>{formatTime(student.timeRemaining)}</td>
