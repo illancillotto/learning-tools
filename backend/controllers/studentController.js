@@ -270,3 +270,72 @@ exports.submitAnswer = async (req, res) => {
     });
   }
 };
+
+exports.getSubmissionDetails = async (req, res) => {
+  const { studentName } = req.params;
+  const { quizId } = req.query;
+
+  try {
+    if (!studentName || !quizId) {
+      return res.status(400).json({ 
+        message: 'Student name and quiz ID are required' 
+      });
+    }
+
+    const submission = await StudentSubmission.findOne({
+      studentName,
+      quizId
+    }).populate({
+      path: 'quizId',
+      select: 'title questions'
+    });
+
+    if (!submission) {
+      return res.status(404).json({ 
+        message: 'Submission not found' 
+      });
+    }
+
+    // Get the questions from the quiz to include question text
+    const quiz = await Quiz.findById(quizId);
+    
+    // Format the response with question text
+    const response = {
+      studentName: submission.studentName,
+      quizId: submission.quizId._id,
+      quizTitle: submission.quizId.title,
+      status: submission.status,
+      startTime: submission.startTime,
+      endTime: submission.endTime,
+      totalQuestions: submission.totalQuestions,
+      correctAnswers: submission.correctAnswers,
+      answers: submission.answers.map(answer => {
+        const question = quiz.questions.find(q => 
+          q._id.toString() === answer.questionId.toString()
+        );
+        return {
+          questionId: answer.questionId,
+          questionText: question?.text || 'Question not found',
+          answer: answer.answer,
+          isCorrect: answer.isCorrect,
+          submittedAt: answer.submittedAt || answer.createdAt,
+          correctAnswer: question?.correctAnswer // Include correct answer for completed quizzes
+        };
+      })
+    };
+
+    // Only include correct answers if the quiz is completed
+    if (submission.status !== 'completed') {
+      response.answers = response.answers.map(({ correctAnswer, ...rest }) => rest);
+    }
+
+    res.json(response);
+
+  } catch (error) {
+    console.error('Error fetching submission details:', error);
+    res.status(500).json({ 
+      message: 'Error fetching submission details',
+      error: error.message 
+    });
+  }
+};

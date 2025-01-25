@@ -50,18 +50,18 @@ module.exports = {
     // Monitor connection events
     io.engine.on('connection', (socket) => {
       connectionCount++;
-      console.log(`New transport connection (${connectionCount} total)`);
+      //console.log(`New transport connection (${connectionCount} total)`);
       
       socket.on('polling', () => {
         pollCount++;
         const now = Date.now();
-        console.log(`Poll #${pollCount}, interval: ${now - lastPollTime}ms`);
+        //console.log(`Poll #${pollCount}, interval: ${now - lastPollTime}ms`);
         lastPollTime = now;
       });
     });
 
     io.on('connection', (socket) => {
-      console.log(`Socket connected: ${socket.id}`);
+      //console.log(`Socket connected: ${socket.id}`);
 
       // Handle student updates more frequently
       socket.on('student-updates', (data) => {
@@ -99,11 +99,13 @@ module.exports = {
             isBrowserActive: true 
           };
           
-          console.log(`Student Join: ${studentId}`, {
+          /*
+            console.log(`Student Join: ${studentId}`, {
             isPageActive,
             isBrowserActive,
             timestamp: new Date().toISOString()
           });
+          */
 
           // Check if student is already connected
           if (activeStudents.has(studentId)) {

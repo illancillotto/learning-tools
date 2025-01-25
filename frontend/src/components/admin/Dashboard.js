@@ -551,7 +551,15 @@ function Dashboard() {
               showModal={showQuizModal} 
               setShowModal={setShowQuizModal} 
             />} />
-            <Route path="/monitoraggio-studenti" element={<StudentMonitoring activeStudents={activeStudents} />} />
+            <Route 
+              path="/monitoraggio-studenti" 
+              element={
+                <StudentMonitoring 
+                  activeStudents={activeStudents} 
+                  quizzes={quizzes}  // Pass quizzes prop
+                />
+              } 
+            />
             <Route path="/submissions" element={<QuizSubmissions />} />
             <Route path="quiz/:id/submissions" element={<QuizSubmissions />} />
           </Routes>

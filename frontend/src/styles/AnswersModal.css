@@ -1,0 +1,55 @@
+.answers-modal .modal-content {
+    border-radius: 12px;
+    overflow: hidden;
+    border: none;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+  }
+  
+  .answers-modal .modal-header {
+    background-color: #f8f9ff;
+    border-bottom: 1px solid #e7eaf4;
+  }
+  
+  .answers-modal .table {
+    margin-bottom: 0;
+  }
+  
+  .answers-modal .table thead {
+    background-color: #f8f9ff;
+  }
+  
+  .answers-modal .table th {
+    font-weight: 600;
+    border-top: none;
+    color: #2c3e50;
+  }
+  
+  .answers-modal .table td {
+    vertical-align: middle;
+    border-color: #e7eaf4;
+  }
+  
+  .answers-modal .badge {
+    font-weight: 500;
+    padding: 6px 12px;
+  }
+  
+  .answers-modal .badge.bg-success {
+    background-color: #e7f4ff !important;
+    color: #0d6efd;
+  }
+  
+  .answers-modal .badge.bg-danger {
+    background-color: #ffe7e7 !important;
+    color: #dc3545;
+  }
+  
+  .answers-modal .btn-link {
+    color: #0d6efd;
+    text-decoration: none;
+  }
+  
+  .answers-modal .btn-link:hover {
+    background-color: #f0f4ff;
+    color: #0a58ca;
+  }

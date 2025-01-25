@@ -116,7 +116,28 @@ const translations = {
           fully_active: "Active",
           tab_switched: "Tab Switched",
           window_inactive: "Window Inactive",
-          disconnected: "Disconnected"
+          disconnected: "Disconnected",
+          actions: 'Actions',
+          viewAnswers: 'View Answers',
+          answers: {
+            question: 'Question',
+            answer: 'Answer',
+            status: 'Status',
+            time: 'Time',
+            correct: 'Correct',
+            incorrect: 'Incorrect',
+            questionNumber: 'Question {number}',
+            noAnswers: 'No answers submitted yet',
+            totalAnswers: 'Total Answers',
+            correctAnswers: 'Correct Answers',
+            submissionStatus: 'Status',
+            inProgress: 'In Progress',
+            completed: 'Completed',
+            timedOut: 'Timed Out'
+          },
+          errors: {
+            fetchSubmissionFailed: 'Failed to load submission details'
+          }
         },
         quiz: {
           previous: 'Previous',
@@ -146,7 +167,8 @@ const translations = {
         }
       },
       common: {
-        close: 'Close'
+        close: 'Close',
+        loading: 'Loading...'
       }
     },
     it: {
@@ -262,7 +284,28 @@ const translations = {
           fully_active: "Attivo",
           tab_switched: "Tab Cambiata",
           window_inactive: "Finestra Inattiva",
-          disconnected: "Disconnesso"
+          disconnected: "Disconnesso",
+          actions: 'Azioni',
+          viewAnswers: 'Visualizza Risposte',
+          answers: {
+            question: 'Domanda',
+            answer: 'Risposta',
+            status: 'Stato',
+            time: 'Ora',
+            correct: 'Corretta',
+            incorrect: 'Errata',
+            questionNumber: 'Domanda {number}',
+            noAnswers: 'Nessuna risposta inviata',
+            totalAnswers: 'Risposte Totali',
+            correctAnswers: 'Risposte Corrette',
+            submissionStatus: 'Stato',
+            inProgress: 'In Corso',
+            completed: 'Completato',
+            timedOut: 'Tempo Scaduto'
+          },
+          errors: {
+            fetchSubmissionFailed: 'Impossibile caricare i dettagli della consegna'
+          }
         },
         quiz: {
           previous: 'Precedente',
@@ -292,7 +335,8 @@ const translations = {
         }
       },
       common: {
-        close: 'Chiudi'
+        close: 'Chiudi',
+        loading: 'Caricamento...'
       }
     }
   };
