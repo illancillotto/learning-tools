@@ -376,15 +376,7 @@ function StudentMonitoring({ activeStudents, quizzes }) {
                         >
                           <i className="bi bi-eye me-1"></i>
                           {t('student.monitoring.viewAnswers')}
-                        </Button>
-                        <Button
-                          variant="link"
-                          className="text-decoration-none"
-                          onClick={() => handleViewSubmissionDetails(student)}
-                        >
-                          <i className="bi bi-list-ul me-1"></i>
-                          {t('student.monitoring.viewDetails')}
-                        </Button>
+                        </Button>                         
                       </div>
                     </td>
                   </tr>
@@ -408,7 +400,7 @@ function StudentMonitoring({ activeStudents, quizzes }) {
         <Modal.Header closeButton>
           <Modal.Title>
             <i className="bi bi-person-circle me-2"></i>
-            {submissionDetails?.studentName} - {getQuizName(submissionDetails?.quizId)}
+            {selectedStudent?.name} - {getQuizName(selectedStudent?.currentQuiz)}
           </Modal.Title>
         </Modal.Header>
         <Modal.Body className="p-0">
@@ -425,16 +417,23 @@ function StudentMonitoring({ activeStudents, quizzes }) {
                   <th className="px-4">{t('student.monitoring.answers.question')}</th>
                   <th className="px-4">{t('student.monitoring.answers.answer')}</th>
                   <th className="px-4">{t('student.monitoring.answers.status')}</th>
-                  <th className="px-4">{t('student.monitoring.answers.time')}</th>
                 </tr>
               </thead>
               <tbody>
                 {submissionDetails.answers.map((answer, index) => (
                   <tr key={index}>
                     <td className="px-4">
-                      {t('student.monitoring.answers.questionNumber', { number: index + 1 })}
+                      {answer.questionText}
                     </td>
-                    <td className="px-4">{answer.answer}</td>
+                    <td className="px-4">
+                      <div>{answer.answer}</div>
+                      {!answer.isCorrect && (
+                        <small className="text-success">
+                          <i className="bi bi-check-circle me-1"></i>
+                          {t('student.monitoring.answers.correctAnswer')}: {answer.correctAnswer}
+                        </small>
+                      )}
+                    </td>
                     <td className="px-4">
                       <Badge bg={answer.isCorrect ? 'success' : 'danger'}>
                         {answer.isCorrect ? 
@@ -443,21 +442,20 @@ function StudentMonitoring({ activeStudents, quizzes }) {
                         }
                       </Badge>
                     </td>
-                    <td className="px-4">
-                      {new Date(answer.submittedAt).toLocaleTimeString()}
-                    </td>
                   </tr>
                 ))}
               </tbody>
               <tfoot className="bg-light">
                 <tr>
-                  <td colSpan="4" className="px-4 py-3">
+                  <td colSpan="3" className="px-4 py-3">
                     <div className="d-flex justify-content-between align-items-center">
                       <div>
-                        <strong>{t('student.monitoring.answers.totalAnswers')}:</strong> {submissionDetails.answers.length}/{submissionDetails.totalQuestions}
+                        <strong>{t('student.monitoring.answers.totalAnswers')}:</strong>{' '}
+                        {submissionDetails.answers.length}/{submissionDetails.totalQuestions}
                       </div>
                       <div>
-                        <strong>{t('student.monitoring.answers.correctAnswers')}:</strong> {submissionDetails.correctAnswers}/{submissionDetails.totalQuestions}
+                        <strong>{t('student.monitoring.answers.correctAnswers')}:</strong>{' '}
+                        {submissionDetails.correctAnswers}/{submissionDetails.totalQuestions}
                         <span className="ms-2 text-muted">
                           ({Math.round((submissionDetails.correctAnswers / submissionDetails.totalQuestions) * 100)}%)
                         </span>

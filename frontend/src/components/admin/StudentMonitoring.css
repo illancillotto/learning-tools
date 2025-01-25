@@ -1,0 +1,12 @@
+.answers-modal .correct-answer {
+    margin-top: 4px;
+    font-size: 0.875rem;
+    color: #198754;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  
+  .answers-modal td {
+    vertical-align: middle;
+  }

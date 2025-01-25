@@ -133,7 +133,8 @@ const translations = {
             submissionStatus: 'Status',
             inProgress: 'In Progress',
             completed: 'Completed',
-            timedOut: 'Timed Out'
+            timedOut: 'Timed Out',
+            correctAnswer: 'Correct answer'
           },
           errors: {
             fetchSubmissionFailed: 'Failed to load submission details'
@@ -301,7 +302,8 @@ const translations = {
             submissionStatus: 'Stato',
             inProgress: 'In Corso',
             completed: 'Completato',
-            timedOut: 'Tempo Scaduto'
+            timedOut: 'Tempo Scaduto',
+            correctAnswer: 'Risposta corretta'
           },
           errors: {
             fetchSubmissionFailed: 'Impossibile caricare i dettagli della consegna'
