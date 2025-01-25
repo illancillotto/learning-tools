@@ -16,6 +16,14 @@ function QuizPage() {
   const progressInterval = useRef(null);
   const [isPageActive, setIsPageActive] = useState(true);
   const [isBrowserActive, setIsBrowserActive] = useState(true);
+  const lastProgress = useRef(0);
+  const lastTimeLeft = useRef(null);
+  const updateQueue = useRef({
+    progress: null,
+    activity: null,
+    timeRemaining: null
+  });
+  const updateInterval = useRef(null);
   
   const handleSubmitQuiz = useCallback(async () => {
     try {
@@ -33,112 +41,100 @@ function QuizPage() {
 
   // Socket connection and event handlers
   useEffect(() => {
-    const setupSocket = () => {
-      // Connect socket
-      connectSocket();
+    let isSubscribed = true;
 
-      // Socket event handlers
+    const setupSocket = () => {
+      if (!socket.connected) {
+        connectSocket();
+      }
+
+      socket.removeAllListeners('connect');
+      socket.removeAllListeners('connect_error');
+      socket.removeAllListeners('join-acknowledged');
+
       socket.on('connect', () => {
+        if (!isSubscribed) return;
         console.log('Connected to socket server');
         setConnectionError(null);
         
-        // Join as student after successful connection
+        // Join as student with activity status
         socket.emit('student-joined', {
           studentName: sessionStorage.getItem('studentName'),
           quizId,
-          timeLimit: quiz?.timeLimit * 60
+          timeLimit: quiz?.timeLimit * 60,
+          activity: {
+            isPageActive: document.visibilityState === 'visible',
+            isBrowserActive: document.hasFocus()
+          }
         });
       });
 
       socket.on('connect_error', (error) => {
+        if (!isSubscribed) return;
         console.log('Socket connection error:', error);
         setConnectionError('Connection lost. Attempting to reconnect...');
       });
 
       socket.on('join-acknowledged', (data) => {
-        console.log('Join acknowledged:', data);
+        if (!isSubscribed) return;
+        console.log('Join acknowledged:', {
+          ...data,
+          activity: {
+            isPageActive: document.visibilityState === 'visible',
+            isBrowserActive: document.hasFocus()
+          },
+          timestamp: new Date().toISOString()
+        });
       });
-
-      // Update server about student activity status
-      const emitActivityStatus = () => {
-        if (socket.connected) {
-          socket.emit('student-activity-status', {
-            studentName: sessionStorage.getItem('studentName'),
-            quizId,
-            isPageActive,
-            isBrowserActive,
-            timestamp: Date.now()
-          });
-        }
-      };
 
       // Handle visibility change
       const handleVisibilityChange = () => {
         const isVisible = document.visibilityState === 'visible';
         setIsPageActive(isVisible);
+        queueActivityUpdate();
         
-        if (!isVisible) {
-          socket.emit('student-attempted-leave', {
-            studentName: sessionStorage.getItem('studentName'),
-            quizId,
-            reason: 'tab_switch',
-            timestamp: Date.now()
-          });
-        }
-        
-        emitActivityStatus();
+        console.log('Visibility changed:', {
+          isPageActive: isVisible,
+          isBrowserActive: document.hasFocus(),
+          timestamp: new Date().toISOString()
+        });
       };
 
       // Handle window focus/blur
       const handleWindowFocus = () => {
         setIsBrowserActive(true);
-        emitActivityStatus();
+        queueActivityUpdate();
+        
+        console.log('Window focused:', {
+          isPageActive: document.visibilityState === 'visible',
+          isBrowserActive: true,
+          timestamp: new Date().toISOString()
+        });
       };
 
       const handleWindowBlur = () => {
         setIsBrowserActive(false);
-        socket.emit('student-attempted-leave', {
-          studentName: sessionStorage.getItem('studentName'),
-          quizId,
-          reason: 'window_blur',
-          timestamp: Date.now()
+        queueActivityUpdate();
+        
+        console.log('Window blurred:', {
+          isPageActive: document.visibilityState === 'visible',
+          isBrowserActive: false,
+          timestamp: new Date().toISOString()
         });
-        emitActivityStatus();
       };
 
-      // Set up event listeners
       document.addEventListener('visibilitychange', handleVisibilityChange);
       window.addEventListener('focus', handleWindowFocus);
       window.addEventListener('blur', handleWindowBlur);
 
-      // Initial status check
-      setIsPageActive(document.visibilityState === 'visible');
-      setIsBrowserActive(document.hasFocus());
-      emitActivityStatus();
-
-      // Start progress updates after connection
-      progressInterval.current = setInterval(() => {
-        if (socket.connected && quiz) {
-          const progress = (Object.keys(answers).length / quiz.questions.length) * 100;
-          socket.emit('student-progress-update', {
-            progress,
-            timeRemaining: timeLeft,
-            isPageActive,
-            isBrowserActive
-          });
-        }
-      }, 2000);
-
-      // Return cleanup function with references to the handlers
-      return {
-        handleVisibilityChange,
-        handleWindowFocus,
-        handleWindowBlur
+      return () => {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        window.removeEventListener('focus', handleWindowFocus);
+        window.removeEventListener('blur', handleWindowBlur);
       };
     };
 
-    // Store the handlers returned from setupSocket
-    const handlers = setupSocket();
+    const cleanup = setupSocket();
 
     // Prevent leaving the page
     const handleBeforeUnload = (e) => {
@@ -157,19 +153,61 @@ function QuizPage() {
 
     window.addEventListener('beforeunload', handleBeforeUnload);
 
-    // Cleanup using the stored handlers
+    // Start progress updates after connection
+    progressInterval.current = setInterval(() => {
+      if (socket.connected && quiz) {
+        const progress = (Object.keys(answers).length / quiz.questions.length) * 100;
+        // Only emit if there's been a change in progress or time
+        if (progress !== lastProgress.current || timeLeft !== lastTimeLeft.current) {
+          socket.emit('student-progress-update', {
+            progress,
+            timeRemaining: timeLeft,
+            isPageActive,
+            isBrowserActive
+          });
+          lastProgress.current = progress;
+          lastTimeLeft.current = timeLeft;
+        }
+      }
+    }, 10000);
+
     return () => {
+      isSubscribed = false;
+      socket.removeAllListeners('connect');
+      socket.removeAllListeners('connect_error');
+      socket.removeAllListeners('join-acknowledged');
       window.removeEventListener('beforeunload', handleBeforeUnload);
-      document.removeEventListener('visibilitychange', handlers.handleVisibilityChange);
-      window.removeEventListener('focus', handlers.handleWindowFocus);
-      window.removeEventListener('blur', handlers.handleWindowBlur);
+      if (cleanup) cleanup();
+      disconnectSocket();
       
       if (progressInterval.current) {
         clearInterval(progressInterval.current);
       }
-      disconnectSocket();
     };
   }, [quizId, answers, timeLeft, quiz, isPageActive, isBrowserActive]);
+
+  // Optimize activity status updates
+  useEffect(() => {
+    let activityTimeout;
+    
+    const emitActivityStatus = () => {
+      if (socket.connected) {
+        socket.emit('student-activity-status', {
+          studentName: sessionStorage.getItem('studentName'),
+          quizId,
+          isPageActive,
+          isBrowserActive,
+          timestamp: Date.now()
+        });
+      }
+    };
+
+    // Debounce activity status updates
+    clearTimeout(activityTimeout);
+    activityTimeout = setTimeout(emitActivityStatus, 10000);
+
+    return () => clearTimeout(activityTimeout);
+  }, [isPageActive, isBrowserActive, quizId]);
 
   // Fetch quiz data
   useEffect(() => {
@@ -228,6 +266,78 @@ function QuizPage() {
     return () => clearInterval(timer);
   }, [timeLeft, handleSubmitQuiz]);
 
+  // Consolidated socket update effect
+  useEffect(() => {
+    const sendBatchedUpdates = () => {
+      if (!socket.connected || !quiz) return;
+
+      const updates = updateQueue.current;
+      
+      // Only send if we have updates queued
+      if (updates.progress !== null || updates.activity !== null || updates.timeRemaining !== null) {
+        socket.emit('student-updates', {
+          studentName: sessionStorage.getItem('studentName'),
+          quizId,
+          ...updates,
+          timestamp: Date.now()
+        });
+        
+        // Clear the queue
+        updateQueue.current = {
+          progress: null,
+          activity: null,
+          timeRemaining: null
+        };
+      }
+    };
+
+    // Set up periodic update sender
+    updateInterval.current = setInterval(sendBatchedUpdates, 15000);
+
+    return () => {
+      if (updateInterval.current) {
+        clearInterval(updateInterval.current);
+      }
+    };
+  }, [quizId, quiz]);
+
+  // Queue progress update instead of sending immediately
+  const queueProgressUpdate = useCallback(() => {
+    if (!quiz) return;
+    
+    const progress = (Object.keys(answers).length / quiz.questions.length) * 100;
+    if (progress !== lastProgress.current) {
+      updateQueue.current.progress = progress;
+      lastProgress.current = progress;
+    }
+  }, [quiz, answers]);
+
+  // Queue activity update instead of sending immediately
+  const queueActivityUpdate = useCallback(() => {
+    updateQueue.current.activity = {
+      isPageActive,
+      isBrowserActive
+    };
+  }, [isPageActive, isBrowserActive]);
+
+  // Update the visibility handlers to use queue
+  const handleVisibilityChange = useCallback(() => {
+    const isVisible = document.visibilityState === 'visible';
+    setIsPageActive(isVisible);
+    queueActivityUpdate();
+  }, [queueActivityUpdate]);
+
+  const handleWindowFocus = useCallback(() => {
+    setIsBrowserActive(true);
+    queueActivityUpdate();
+  }, [queueActivityUpdate]);
+
+  const handleWindowBlur = useCallback(() => {
+    setIsBrowserActive(false);
+    queueActivityUpdate();
+  }, [queueActivityUpdate]);
+
+  // Update answer change handler
   const handleAnswerChange = useCallback(async (answer) => {
     try {
       setAnswers(prev => ({
@@ -236,24 +346,18 @@ function QuizPage() {
       }));
       
       const questionId = quiz.questions[currentQuestion].id;
-      const response = await api.post(`/quiz/${quizId}/answer`, {
+      await api.post(`/quiz/${quizId}/answer`, {
         questionId,
         answer,
         studentName: sessionStorage.getItem('studentName')
       });
 
-      if (response.data.progress && socket.connected) {
-        socket.emit('student-progress-update', {
-          progress: response.data.progress,
-          timeRemaining: timeLeft
-        });
-      }
-
+      queueProgressUpdate();
     } catch (error) {
       console.error('Error saving answer:', error);
       setConnectionError('Failed to save answer. Please try again.');
     }
-  }, [currentQuestion, quizId, quiz, timeLeft]);
+  }, [currentQuestion, quizId, quiz, queueProgressUpdate]);
 
   if (!quiz) return <div>Loading...</div>;
 

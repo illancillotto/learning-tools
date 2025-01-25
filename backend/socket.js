@@ -2,6 +2,11 @@ const { Server } = require('socket.io');
 const StudentSubmission = require('./models/Student');
 const os = require('os');
 
+// Add monitoring variables
+let pollCount = 0;
+let lastPollTime = Date.now();
+let connectionCount = 0;
+
 // Get server IP address
 function getServerIP() {
   const interfaces = os.networkInterfaces();
@@ -21,141 +26,169 @@ const SERVER_IP = getServerIP();
 console.log('Server running on IP:', SERVER_IP);
 
 let io;
-let activeStudents = new Map(); // Track active students
-let studentSockets = new Map(); // Track socket to student mapping
+let activeStudents = new Map();
+let studentSockets = new Map();
+let pendingUpdates = new Map();
+let updateInterval;
 
 module.exports = {
   init: (server) => {
     io = new Server(server, {
       cors: {
-        origin: process.env.NODE_ENV === 'development' 
-          ? '*'  // Allow all origins in development
-          : process.env.FRONTEND_URL,
+        origin: process.env.NODE_ENV === 'development' ? '*' : process.env.FRONTEND_URL,
         methods: ['GET', 'POST', 'OPTIONS'],
-        credentials: true,
-        allowedHeaders: ['Content-Type', 'Authorization']
+        credentials: true
       },
-      pingTimeout: 60000,
-      pingInterval: 25000,
-      transports: ['polling', 'websocket'],
-      allowEIO3: true,
-      path: '/socket.io/',
-      connectTimeout: 20000,
-      maxHttpBufferSize: 1e8, // 100 MB
-      allowUpgrades: true,
+      pingTimeout: 30000,
+      pingInterval: 10000,
+      transports: ['websocket'],
+      connectTimeout: 10000,
+      maxHttpBufferSize: 1e6,
       serveClient: false
     });
 
-    // Debug connection issues
-    io.engine.on('connection_error', (err) => {
-      console.error('Connection error:', {
-        type: err.type,
-        message: err.message,
-        context: err.context
+    // Monitor connection events
+    io.engine.on('connection', (socket) => {
+      connectionCount++;
+      console.log(`New transport connection (${connectionCount} total)`);
+      
+      socket.on('polling', () => {
+        pollCount++;
+        const now = Date.now();
+        console.log(`Poll #${pollCount}, interval: ${now - lastPollTime}ms`);
+        lastPollTime = now;
       });
     });
 
     io.on('connection', (socket) => {
-      console.log('New connection:', socket.id, 'Transport:', socket.conn.transport.name);
+      console.log(`Socket connected: ${socket.id}`);
 
-      // Handle transport change
-      socket.conn.on('upgrade', (transport) => {
-        console.log('Transport upgraded to:', transport.name);
+      // Handle student updates more frequently
+      socket.on('student-updates', (data) => {
+        try {
+          const studentId = data.studentName;
+          if (!studentId) return;
+
+          const existingStudent = activeStudents.get(studentId);
+          if (existingStudent) {
+            const updatedStudent = {
+              ...existingStudent,
+              ...data,
+              lastUpdate: Date.now(),
+              activity: {
+                isPageActive: data.isPageActive,
+                isBrowserActive: data.isBrowserActive
+              },
+              status: 'connected'
+            };
+            activeStudents.set(studentId, updatedStudent);
+            
+            // Broadcast update immediately
+            io.emit('student-status-update', updatedStudent);
+          }
+        } catch (error) {
+          console.error('Error processing student updates:', error);
+        }
       });
 
       socket.on('student-joined', (data) => {
         try {
-          console.log('Student joined:', data);
           const studentId = data.studentName;
+          const { isPageActive, isBrowserActive } = data.activity || { 
+            isPageActive: true, 
+            isBrowserActive: true 
+          };
           
+          console.log(`Student Join: ${studentId}`, {
+            isPageActive,
+            isBrowserActive,
+            timestamp: new Date().toISOString()
+          });
+
+          // Check if student is already connected
+          if (activeStudents.has(studentId)) {
+            const existingStudent = activeStudents.get(studentId);
+            if (existingStudent.socketId !== socket.id) {
+              existingStudent.socketId = socket.id;
+              existingStudent.activity = { isPageActive, isBrowserActive };
+              existingStudent.lastUpdate = Date.now();
+              activeStudents.set(studentId, existingStudent);
+              
+              socket.emit('join-acknowledged', { 
+                success: true, 
+                reconnected: true,
+                activity: { isPageActive, isBrowserActive }
+              });
+              return;
+            }
+            return;
+          }
+          
+          // New student connection
           activeStudents.set(studentId, {
             id: studentId,
             name: data.studentName,
             status: 'connected',
             currentQuiz: data.quizId,
             timeRemaining: data.timeLimit,
-            progress: 0,
             lastUpdate: Date.now(),
-            socketId: socket.id
+            socketId: socket.id,
+            activity: { isPageActive, isBrowserActive }
           });
 
           studentSockets.set(socket.id, studentId);
-          
-          // Acknowledge the join
-          socket.emit('join-acknowledged', { success: true });
-          
-          // Broadcast updated list
-          io.emit('activeStudents', Array.from(activeStudents.values()));
+          socket.emit('join-acknowledged', { 
+            success: true, 
+            new: true,
+            activity: { isPageActive, isBrowserActive }
+          });
         } catch (error) {
           console.error('Error in student-joined:', error);
-          socket.emit('error', { message: 'Failed to join' });
+          socket.emit('join-acknowledged', { 
+            success: false, 
+            error: error.message 
+          });
         }
       });
 
-      socket.on('student-progress-update', (data) => {
-        try {
-          const studentId = studentSockets.get(socket.id);
-          if (studentId && activeStudents.has(studentId)) {
-            const student = activeStudents.get(studentId);
-            student.progress = data.progress;
-            student.timeRemaining = data.timeRemaining;
-            student.lastUpdate = Date.now();
+      // More frequent status checks
+      const statusInterval = setInterval(() => {
+        const now = Date.now();
+        activeStudents.forEach((student, studentId) => {
+          if (now - student.lastUpdate > 5000) { // 5 seconds threshold
+            student.status = 'disconnected';
+            io.emit('student-status-update', student);
+          }
+        });
+      }, 2000); // Check every 2 seconds
+
+      // Cleanup on disconnect
+      socket.on('disconnect', () => {
+        clearInterval(statusInterval);
+        const studentId = studentSockets.get(socket.id);
+        if (studentId) {
+          const student = activeStudents.get(studentId);
+          if (student) {
+            student.status = 'disconnected';
             activeStudents.set(studentId, student);
-            io.emit('activeStudents', Array.from(activeStudents.values()));
+            io.emit('student-status-update', student);
           }
-        } catch (error) {
-          console.error('Error in progress-update:', error);
+          studentSockets.delete(socket.id);
         }
       });
 
-      socket.on('getActiveStudents', () => {
-        try {
-          const now = Date.now();
-          // Clean up stale students (no updates for more than 30 seconds)
-          for (const [studentId, student] of activeStudents.entries()) {
-            if (now - student.lastUpdate > 30000) {
-              activeStudents.delete(studentId);
-              console.log('Removed stale student:', studentId);
-            }
-          }
-          socket.emit('activeStudents', Array.from(activeStudents.values()));
-        } catch (error) {
-          console.error('Error in getActiveStudents:', error);
-        }
-      });
-
-      socket.on('disconnect', (reason) => {
-        console.log('Client disconnected:', socket.id, 'Reason:', reason);
-        try {
-          const studentId = studentSockets.get(socket.id);
-          if (studentId) {
-            const student = activeStudents.get(studentId);
-            if (student) {
-              student.status = 'disconnected';
-              student.lastUpdate = Date.now();
-              activeStudents.set(studentId, student);
-              io.emit('activeStudents', Array.from(activeStudents.values()));
-            }
-            studentSockets.delete(socket.id);
-          }
-        } catch (error) {
-          console.error('Error in disconnect handler:', error);
-        }
-      });
-
+      // Simplified counter fetching
       socket.on('getStudentCounters', async () => {
         try {
-          // Get all in-progress submissions
           const submissions = await StudentSubmission.find({ 
             status: 'in-progress' 
           }).select('studentName answers totalQuestions');
 
-          // Format the data for frontend
           const studentCounters = submissions.map(sub => ({
             studentName: sub.studentName,
             totalAnswers: sub.answers.length,
             correctAnswers: sub.answers.filter(a => a.isCorrect).length,
-            totalQuestions: sub.totalQuestions || 10  // Fallback to 10 if not set
+            totalQuestions: sub.totalQuestions || 10
           }));
 
           socket.emit('studentCounters', studentCounters);
@@ -165,23 +198,36 @@ module.exports = {
       });
     });
 
-    // Periodic cleanup of disconnected sockets
+    // Broadcast all students status periodically
     setInterval(() => {
-      const now = Date.now();
-      for (const [studentId, student] of activeStudents.entries()) {
-        if (student.status === 'disconnected' && now - student.lastUpdate > 60000) {
-          activeStudents.delete(studentId);
-          console.log('Cleaned up disconnected student:', studentId);
-        }
-      }
-    }, 30000);
+      io.emit('activeStudents', Array.from(activeStudents.values()));
+    }, 3000); // Every 3 seconds
 
     return io;
   },
+
   getIO: () => {
     if (!io) {
       throw new Error('Socket.io not initialized!');
     }
     return io;
-  }
+  },
+
+  cleanup: () => {
+    if (updateInterval) {
+      clearInterval(updateInterval);
+    }
+    pendingUpdates.clear();
+    activeStudents.clear();
+    studentSockets.clear();
+  },
+
+  // Add monitoring methods
+  getStats: () => ({
+    connections: connectionCount,
+    pollCount,
+    lastPollTime,
+    activeStudents: activeStudents.size,
+    pendingUpdates: pendingUpdates.size
+  })
 };
